@@ -147,6 +147,23 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "django-tables2"
+version = "2.7.5"
+description = "Table/data-grid framework for Django"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "django_tables2-2.7.5-py3-none-any.whl", hash = "sha256:d9338937797207ffb6f481be2125c5ec3a0bb1858d409c672cc25fc5d654cb22"},
+    {file = "django_tables2-2.7.5.tar.gz", hash = "sha256:fb5dcaa09379cf3947598ec7e1bd5f26ed63aafdee3b23963446763bbeac37bf"},
+]
+
+[package.dependencies]
+django = ">=4.2"
+
+[package.extras]
+tablib = ["tablib"]
+
+[[package]]
 name = "dotenv"
 version = "0.9.9"
 description = "Deprecated package"
@@ -315,4 +332,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13.2"
-content-hash = "17409a3f18b1cf06e5d36705d2ece6cae923515350bbebe76fa388d4111f66bc"
+content-hash = "b1a2b9966bde7e41d1e675484c74bf59cdfa0e89a55b7045f0f795ec1baae4a0"
