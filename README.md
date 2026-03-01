@@ -11,7 +11,7 @@ python manage.py runserver
 ```
  python manage.py makemigrations helloAssoImporter
 python manage.py migrate
-```
+```s
 
 ### Rever migration
 ```
