@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<h1>Bienvenue, {{ request.user.username }}</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+    {% for app in apps %}
+        {% if app.visible %}
+        <a href="{{ app.url }}" style="display: block; background: white; border-radius: 6px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-decoration: none; color: inherit;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">{{ app.title }}</h2>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">{{ app.description }}</p>
+        </a>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

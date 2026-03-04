@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisateurs{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Utilisateurs</h1>
+    <a href="{% url 'userManagement:invite' %}" class="btn btn-primary">+ Inviter</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom d'utilisateur</th>
+            <th>Email</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>
+                {% for g in u.groups.all %}
+                    <span style="background:#e9ecef; padding:0.2rem 0.6rem; border-radius:3px; font-size:0.85rem;">{{ g.name }}</span>
+                {% empty %}
+                    <span style="color:#999;">—</span>
+                {% endfor %}
+            </td>
+            <td>
+                {% if u.is_active %}
+                    <span style="color:green;">Actif</span>
+                {% else %}
+                    <span style="color:#dc3545;">Inactif</span>
+                {% endif %}
+            </td>
+            <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                {% if u != request.user %}
+                    <a href="{% url 'userManagement:user_role' u.pk %}" class="btn btn-secondary">Rôle</a>
+                    <form method="post" action="{% url 'userManagement:user_deactivate' u.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}">
+                            {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
+                        </button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="color:#999;">Aucun utilisateur.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

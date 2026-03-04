@@ -17,3 +17,9 @@ python manage.py migrate
 ```
 ./manage.py migrate helloAssoImporter zero
 ```
+
+
+### Create super user
+```
+ python manage.py createsuperuser  
+ ```

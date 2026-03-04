@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Changer le rôle{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1>Rôle de {{ target_user.username }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="{% url 'userManagement:user_list' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
