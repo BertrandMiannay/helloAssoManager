@@ -12,6 +12,8 @@ requests = "^2.32.4"
 helloasso-apiv5 = "^1.0.0"
 dotenv = "^0.9.9"
 django-tables2 = "^2.7.5"
+django-allauth = "^65.14.3"
+django-invitations = "^2.1.0"
 
 
 [build-system]

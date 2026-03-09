@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Déconnexion{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h1>Déconnexion</h1>
+    <p style="margin-bottom:1.25rem;">Voulez-vous vraiment vous déconnecter ?</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">Déconnexion</button>
+            <a href="/hello_asso/" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

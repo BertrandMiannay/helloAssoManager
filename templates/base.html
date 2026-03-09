@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TpManagement{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; }
+        nav { background: #1a1a2e; color: white; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+        nav a { color: #ccc; text-decoration: none; }
+        nav a:hover { color: white; }
+        nav .brand { font-weight: bold; font-size: 1.1rem; color: white; }
+        nav .spacer { flex: 1; }
+        .messages { padding: 0.75rem 1.5rem; }
+        .messages .message { padding: 0.5rem 1rem; margin-bottom: 0.5rem; border-radius: 4px; }
+        .messages .message.success { background: #d4edda; color: #155724; }
+        .messages .message.error { background: #f8d7da; color: #721c24; }
+        .messages .message.info { background: #d1ecf1; color: #0c5460; }
+        main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+        h1 { margin-bottom: 1.5rem; font-size: 1.75rem; }
+        .btn { display: inline-block; padding: 0.4rem 1rem; border-radius: 4px; text-decoration: none; font-size: 0.9rem; cursor: pointer; border: none; }
+        .btn-primary { background: #1a1a2e; color: white; }
+        .btn-primary:hover { background: #2a2a4e; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; }
+        .form-card { background: white; padding: 2rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 500px; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+        input, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        input:focus, select:focus { outline: none; border-color: #1a1a2e; }
+        .form-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+    </style>
+</head>
+<body>
+<nav>
+    {% if user.is_authenticated %}
+        <span class="brand">TpManagement</span>
+        {% if user.groups.all|length > 0 and user.groups.all.0.name == 'admin' or user.is_superuser %}
+            <a href="/users/">Utilisateurs</a>
+        {% endif %}
+        <a href="/hello_asso/">Inscriptions</a>
+        <span class="spacer"></span>
+        <span>{{ user.username }}</span>
+        <a href="/accounts/logout/">Déconnexion</a>
+    {% else %}
+        <span class="spacer"></span>
+        <a href="/accounts/login/">Connexion</a>
+    {% endif %}
+</nav>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>
