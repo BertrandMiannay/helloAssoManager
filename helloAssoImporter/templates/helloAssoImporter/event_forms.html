@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Inscriptions{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Formulaires d'inscription</h1>
+    <a href="{% url 'inscriptions-refresh' %}" class="btn btn-primary">Rafraîchir les inscriptions</a>
+</div>
+
+<input type="text" id="search" placeholder="Rechercher par titre…" style="width:300px; margin-bottom:1.25rem;">
+
+{% if event_forms %}
+<table id="event-table">
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Inscrits</th>
+            <th class="sortable" data-col="2" style="cursor:pointer;">Date de début <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="3" style="cursor:pointer;">Date de fin <span class="sort-icon">↕</span></th>
+            <th class="sortable" data-col="4" style="cursor:pointer;">Dernière mise à jour des inscriptions <span class="sort-icon">↕</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for form in event_forms %}
+        <tr style="cursor:pointer;" onclick="window.location='{% url 'event-form-detail' form.form_slug %}'">
+            <td><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
+            <td>{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
+            <td data-value="{{ form.start_date|date:'Y-m-d' }}">{{ form.start_date|date:"d/m/Y" }}</td>
+            <td data-value="{{ form.end_date|date:'Y-m-d' }}">{{ form.end_date|date:"d/m/Y" }}</td>
+            <td data-value="{{ form.last_registration_updated|date:'Y-m-d'|default:'' }}">{{ form.last_registration_updated|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucun formulaire trouvé.</p>
+{% endif %}
+
+<script>
+    document.getElementById('search').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('#event-table tbody tr').forEach(function (row) {
+            const title = row.cells[0].textContent.toLowerCase(); // col 0 = titre, col 1 = inscrits, col 2-4 = dates
+            row.style.display = title.includes(query) ? '' : 'none';
+        });
+    });
+
+    let sortState = { col: null, asc: true };
+
+    document.querySelectorAll('#event-table th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            const col = parseInt(this.dataset.col);
+            sortState.asc = sortState.col === col ? !sortState.asc : true;
+            sortState.col = col;
+
+            document.querySelectorAll('#event-table th.sortable .sort-icon').forEach(el => el.textContent = '↕');
+            this.querySelector('.sort-icon').textContent = sortState.asc ? '↑' : '↓';
+
+            const tbody = document.querySelector('#event-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                const aVal = a.cells[col].dataset.value;
+                const bVal = b.cells[col].dataset.value;
+                return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+</script>
+{% endblock %}

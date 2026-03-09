@@ -1,9 +1,13 @@
 import requests
+import json
+import logging
 from helloasso_api import HaApiV5
 from dotenv import load_dotenv
 import os
-from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member
+from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 class HelloAssoApi:
@@ -48,6 +52,28 @@ class HelloAssoApi:
             )
             new_form.save()
 
+    def refresh_event_forms(self,) -> None:
+        url = f"/v5/organizations/{self.organization_slug}/forms"
+        params = {
+            "formTypes": ["Event"],
+            "states": ["Public", "Private"],
+            "pageSize": 100
+        }
+        raw_result = self.hello_asso_api.call(url, method="GET", params=params)
+        for i in (raw_result.json()["data"]):
+            new_form = EventForm(
+                form_slug = i["formSlug"],
+                title = i["title"],
+                form_type = i["formType"],
+                description = i["description"],
+                start_date = i["startDate"],
+                end_date = i["endDate"],
+                last_registration_updated = None,
+                updated_at = i["meta"]["updatedAt"],
+                created_at = i["meta"]["createdAt"],
+            )
+            new_form.save()
+
     def get_member_registry(self, order: MemberShipFormOrder):
         url = f"/v5/orders/{order.order_id}"
         raw_result = self.hello_asso_api.call(url, method="GET")
@@ -81,21 +107,34 @@ class HelloAssoApi:
             new_member.save()
 
 
-    def get_form_orders(self, form: MemberShipForm):
+    def get_event_form_orders(self, form: EventForm):
         url = f"/v5/organizations/{self.organization_slug}/forms/{form.form_type}/{form.form_slug}/orders"
         raw_result = self.hello_asso_api.call(url, method="GET")
-        for i in raw_result.json()["data"]:
-            new_form_order = MemberShipFormOrder(
-                order_id = i["id"],
-                form = form,
-                payer_email = i["payer"]["email"],
-                payer_first_name = i["payer"]["firstName"],
-                payer_last_name = i["payer"]["lastName"],
-                updated_at = i["meta"]["updatedAt"],
-                created_at = i["meta"]["createdAt"],
+        data = raw_result.json()
+        for i in data.get("data", []):
+            order, _ = EventFormOrder.objects.get_or_create(
+                order_id=i["id"],
+                defaults={
+                    "form": form,
+                    "payer_email": i["payer"]["email"],
+                    "payer_first_name": i["payer"]["firstName"],
+                    "payer_last_name": i["payer"]["lastName"],
+                    "created_at": i["meta"]["createdAt"],
+                    "updated_at": i["meta"]["updatedAt"],
+                }
             )
-            new_form_order.save()
-            self.get_member_registry(new_form_order)
+            for item in i.get("items", []):
+                EventRegistration.objects.get_or_create(
+                    item_id=item["id"],
+                    defaults={
+                        "order": order,
+                        "name": item["name"],
+                        "first_name": item["user"]["firstName"],
+                        "last_name": item["user"]["lastName"],
+                    }
+                )
+        form.last_registration_updated = datetime.now()
+        form.save(update_fields=["last_registration_updated"])
 
     def refresh_all_membership_forms_registry(self,):
         all_forms = MemberShipForm.objects.all()

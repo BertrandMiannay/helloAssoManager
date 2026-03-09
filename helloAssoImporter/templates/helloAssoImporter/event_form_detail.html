@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event_form.title }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">{{ event_form.title }}</h1>
+    <a href="{% url 'event-form-refresh-orders' event_form.form_slug %}" class="btn btn-primary">Charger les inscriptions</a>
+    <a href="{% url 'inscriptions' %}" class="btn btn-secondary">Retour</a>
+</div>
+
+{% if registrations %}
+<input type="text" id="search" placeholder="Rechercher par nom, prénom ou payeur…" style="width:350px; margin-bottom:1.25rem;">
+
+<table id="reg-table">
+    <thead>
+        <tr>
+            <th>Prénom</th>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Payeur</th>
+            <th class="sortable" data-col="4" style="cursor:pointer;">Date d'inscription <span class="sort-icon">↕</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reg in registrations %}
+        <tr>
+            <td>{{ reg.first_name }}</td>
+            <td>{{ reg.last_name }}</td>
+            <td>{{ reg.name }}</td>
+            <td>{{ reg.order.payer_first_name }} {{ reg.order.payer_last_name }}</td>
+            <td data-value="{{ reg.order.created_at|date:'Y-m-d' }}">{{ reg.order.created_at|date:"d/m/Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucune inscription chargée.</p>
+{% endif %}
+
+<script>
+    document.getElementById('search').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('#reg-table tbody tr').forEach(function (row) {
+            const firstName = row.cells[0].textContent.toLowerCase();
+            const lastName = row.cells[1].textContent.toLowerCase();
+            const payer = row.cells[3].textContent.toLowerCase();
+            row.style.display = (firstName.includes(query) || lastName.includes(query) || payer.includes(query)) ? '' : 'none';
+        });
+    });
+
+    let sortState = { col: null, asc: true };
+
+    document.querySelectorAll('#reg-table th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            const col = parseInt(this.dataset.col);
+            sortState.asc = sortState.col === col ? !sortState.asc : true;
+            sortState.col = col;
+
+            document.querySelectorAll('#reg-table th.sortable .sort-icon').forEach(el => el.textContent = '↕');
+            this.querySelector('.sort-icon').textContent = sortState.asc ? '↑' : '↓';
+
+            const tbody = document.querySelector('#reg-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                const aVal = a.cells[col].dataset.value;
+                const bVal = b.cells[col].dataset.value;
+                return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+</script>
+{% endblock %}

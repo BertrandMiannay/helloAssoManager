@@ -153,3 +153,17 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # django-invitations
 INVITATIONS_INVITATION_ONLY = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
