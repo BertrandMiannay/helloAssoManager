@@ -1,7 +1,7 @@
 from django.test import TestCase
 from unittest.mock import MagicMock, patch
 
-from common.api.helloAssoApi import HelloAssoApi
+from common.api.helloAssoApi import HelloAssoApi, HelloAssoApiError
 
 SIMPLE_SCHEMA = {
     "type": "object",
@@ -29,20 +29,20 @@ class CheckFormDataFormatTest(TestCase):
             mock.json.return_value = json_data
         return mock
 
-    def test_returns_empty_on_http_error(self):
+    def test_raises_on_http_error(self):
         raw = self._mock_response(ok=False, status_code=500, text="Internal Server Error")
-        result = self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
-        self.assertEqual(result, [])
+        with self.assertRaises(HelloAssoApiError):
+            self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
 
-    def test_returns_empty_on_non_json_response(self):
+    def test_raises_on_non_json_response(self):
         raw = self._mock_response(ok=True, raises_json=True)
-        result = self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
-        self.assertEqual(result, [])
+        with self.assertRaises(HelloAssoApiError):
+            self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
 
-    def test_returns_empty_on_schema_validation_failure(self):
+    def test_raises_on_schema_validation_failure(self):
         raw = self._mock_response(ok=True, json_data={"wrong_key": []})
-        result = self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
-        self.assertEqual(result, [])
+        with self.assertRaises(HelloAssoApiError):
+            self.api.check_form_data_format(raw, SIMPLE_SCHEMA)
 
     def test_returns_data_on_valid_response(self):
         data = [{"id": 1}, {"id": 2}]

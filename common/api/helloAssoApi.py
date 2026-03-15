@@ -20,6 +20,10 @@ with open(_schema_dir / "event_form_order_schema.json") as f:
 logger = logging.getLogger(__name__)
 
 
+class HelloAssoApiError(Exception):
+    pass
+
+
 class HelloAssoApi:
     BASE_URL = "https://api.helloasso.com/v5"  
 
@@ -64,18 +68,21 @@ class HelloAssoApi:
 
     def check_form_data_format(self, raw_result, schema: dict) -> list:
         if not raw_result.ok:
-            logger.error("HelloAsso API error %s: %s", raw_result.status_code, raw_result.text)
-            return []
+            msg = f"Erreur API HelloAsso ({raw_result.status_code})"
+            logger.error("%s: %s", msg, raw_result.text)
+            raise HelloAssoApiError(msg)
         try:
             body = raw_result.json()
         except ValueError:
-            logger.error("HelloAsso API returned non-JSON response")
-            return []
+            msg = "La réponse de l'API HelloAsso n'est pas un JSON valide"
+            logger.error(msg)
+            raise HelloAssoApiError(msg)
         try:
             validate(instance=body, schema=schema)
         except ValidationError as e:
-            logger.error("HelloAsso API response does not match schema: %s", e.message)
-            return []
+            msg = "Le format de la réponse HelloAsso est invalide"
+            logger.error("%s: %s", msg, e.message)
+            raise HelloAssoApiError(msg)
         return body.get("data", [])
 
     def refresh_event_forms(self,) -> None:
@@ -165,3 +172,13 @@ class HelloAssoApi:
         all_forms = MemberShipForm.objects.all()
         for form in all_forms:
             self.get_form_orders(form)
+
+
+_hello_asso_api_instance: HelloAssoApi | None = None
+
+
+def get_hello_asso_api() -> HelloAssoApi:
+    global _hello_asso_api_instance
+    if _hello_asso_api_instance is None:
+        _hello_asso_api_instance = HelloAssoApi()
+    return _hello_asso_api_instance
