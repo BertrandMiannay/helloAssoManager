@@ -1,11 +1,21 @@
 import requests
 import json
 import logging
+from pathlib import Path
 from helloasso_api import HaApiV5
 from dotenv import load_dotenv
+from jsonschema import validate, ValidationError
 import os
 from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
 from datetime import datetime
+
+_schema_dir = Path(__file__).parent
+with open(_schema_dir / "event_form_schema.json") as f:
+    EVENT_FORM_SCHEMA = json.load(f)
+with open(_schema_dir / "membership_form_schema.json") as f:
+    MEMBERSHIP_FORM_SCHEMA = json.load(f)
+with open(_schema_dir / "event_form_order_schema.json") as f:
+    EVENT_FORM_ORDER_SCHEMA = json.load(f)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +49,7 @@ class HelloAssoApi:
             "states": ["Public", "Private"]
         }
         raw_result = self.hello_asso_api.call(url, method="GET", params=params)
-        for i in (raw_result.json()["data"]):
+        for i in self.check_form_data_format(raw_result, MEMBERSHIP_FORM_SCHEMA):
             new_form = MemberShipForm(
                 form_slug = i["formSlug"],
                 title = i["title"],
@@ -52,6 +62,22 @@ class HelloAssoApi:
             )
             new_form.save()
 
+    def check_form_data_format(self, raw_result, schema: dict) -> list:
+        if not raw_result.ok:
+            logger.error("HelloAsso API error %s: %s", raw_result.status_code, raw_result.text)
+            return []
+        try:
+            body = raw_result.json()
+        except ValueError:
+            logger.error("HelloAsso API returned non-JSON response")
+            return []
+        try:
+            validate(instance=body, schema=schema)
+        except ValidationError as e:
+            logger.error("HelloAsso API response does not match schema: %s", e.message)
+            return []
+        return body.get("data", [])
+
     def refresh_event_forms(self,) -> None:
         url = f"/v5/organizations/{self.organization_slug}/forms"
         params = {
@@ -60,7 +86,7 @@ class HelloAssoApi:
             "pageSize": 100
         }
         raw_result = self.hello_asso_api.call(url, method="GET", params=params)
-        for i in (raw_result.json()["data"]):
+        for i in self.check_form_data_format(raw_result, EVENT_FORM_SCHEMA):
             new_form = EventForm(
                 form_slug = i["formSlug"],
                 title = i["title"],
@@ -110,8 +136,7 @@ class HelloAssoApi:
     def get_event_form_orders(self, form: EventForm):
         url = f"/v5/organizations/{self.organization_slug}/forms/{form.form_type}/{form.form_slug}/orders"
         raw_result = self.hello_asso_api.call(url, method="GET")
-        data = raw_result.json()
-        for i in data.get("data", []):
+        for i in self.check_form_data_format(raw_result, EVENT_FORM_ORDER_SCHEMA):
             order, _ = EventFormOrder.objects.get_or_create(
                 order_id=i["id"],
                 defaults={
