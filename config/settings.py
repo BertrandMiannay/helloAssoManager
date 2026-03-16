@@ -164,6 +164,7 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_LOGIN_METHODS = {'email', 'username'}
 ACCOUNT_ADAPTER = 'invitations.models.InvitationsAdapter'
+ACCOUNT_TRUSTED_PROXIES = ['127.0.0.1']
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
