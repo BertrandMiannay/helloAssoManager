@@ -28,7 +28,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
             {
                 'title': 'Inscriptions',
                 'description': "Consulter les formulaires d'adhésion et les membres importés depuis HelloAsso.",
-                'url': '/hello_asso/',
+                'url': '/inscriptions/',
                 'visible': True,
             }
         ]
