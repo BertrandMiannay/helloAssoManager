@@ -1,6 +1,0 @@
-[build]
-builder = "nixpacks"
-
-[deploy]
-startCommand = "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn config.wsgi"
-restartPolicyType = "on_failure"
