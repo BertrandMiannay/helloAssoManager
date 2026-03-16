@@ -1,0 +1,19 @@
+[Unit]
+Description=HelloAsso Manager
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/helloAssoManager
+EnvironmentFile=/etc/helloasso/env
+ExecStart=/var/www/helloAssoManager/.venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/run/helloasso/gunicorn.sock \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+RuntimeDirectory=helloasso
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
