@@ -3,11 +3,11 @@ Description=HelloAsso Manager
 After=network.target
 
 [Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/var/www/helloAssoManager
+User=<your-user>
+Group=<your-user>
+WorkingDirectory=/home/<your-user>/helloAssoManager
 EnvironmentFile=/etc/helloasso/env
-ExecStart=/var/www/helloAssoManager/.venv/bin/gunicorn \
+ExecStart=/home/<your-user>/helloAssoManager/.venv/bin/gunicorn \
     --workers 3 \
     --bind unix:/run/helloasso/gunicorn.sock \
     config.wsgi:application
