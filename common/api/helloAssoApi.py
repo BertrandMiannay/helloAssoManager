@@ -177,8 +177,14 @@ class HelloAssoApi:
 _hello_asso_api_instance: HelloAssoApi | None = None
 
 
-def get_hello_asso_api() -> HelloAssoApi:
+def init_hello_asso_api() -> None:
     global _hello_asso_api_instance
+    _hello_asso_api_instance = HelloAssoApi()
+
+
+def get_hello_asso_api() -> HelloAssoApi:
     if _hello_asso_api_instance is None:
-        _hello_asso_api_instance = HelloAssoApi()
+        raise RuntimeError("HelloAssoApi n'a pas été initialisé (appeler init_hello_asso_api() au démarrage)")
     return _hello_asso_api_instance
+
+
