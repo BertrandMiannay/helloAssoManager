@@ -2,7 +2,7 @@ import time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
 from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
@@ -68,13 +68,3 @@ def refresh_event_forms(request):
     elapsed = round(time.time() - start)
     messages.success(request, f"Import des sorties terminé. {forms_added} activité(s) et {registrations_added} inscription(s) créées en {elapsed} seconde(s).")
     return redirect('inscriptions')
-
-
-@login_required
-def refresh_event_form_orders(request, form_slug):
-    form = get_object_or_404(EventForm, pk=form_slug)
-    try:
-        get_hello_asso_api().get_event_form_orders(form)
-    except HelloAssoApiError as e:
-        notify_import_error(request, e)
-    return redirect('event-form-detail', form_slug=form_slug)

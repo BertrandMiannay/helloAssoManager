@@ -5,7 +5,6 @@
 {% block content %}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">{{ event_form.title }}</h1>
-    <a href="{% url 'event-form-refresh-orders' event_form.form_slug %}" class="btn btn-primary">Charger les inscriptions</a>
     <a href="{% url 'inscriptions' %}" class="btn btn-secondary">Retour</a>
 </div>
 
