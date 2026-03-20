@@ -65,26 +65,31 @@ class HelloAssoApi:
             )
             new_form.save()
 
-    def refresh_event_forms(self) -> None:
+    def refresh_event_forms(self) -> int:
         result = self._formulaires.organizations_organization_slug_forms_get(
             organization_slug=self.organization_slug,
             form_types=["Event"],
             states=["Public", "Private"],
             page_size=100,
         )
+        new_count = 0
         for i in result.data or []:
-            new_form = EventForm(
+            _, created = EventForm.objects.get_or_create(
                 form_slug=i.form_slug,
-                title=i.title,
-                form_type=i.form_type,
-                description=i.description,
-                start_date=i.start_date,
-                end_date=i.end_date,
-                last_registration_updated=None,
-                updated_at=i.meta.updated_at if i.meta else None,
-                created_at=i.meta.created_at if i.meta else None,
+                defaults={
+                    "title": i.title,
+                    "form_type": i.form_type,
+                    "description": i.description,
+                    "start_date": i.start_date,
+                    "end_date": i.end_date,
+                    "last_registration_updated": None,
+                    "updated_at": i.meta.updated_at if i.meta else None,
+                    "created_at": i.meta.created_at if i.meta else None,
+                }
             )
-            new_form.save()
+            if created:
+                new_count += 1
+        return new_count
 
     def get_member_registry(self, order: MemberShipFormOrder) -> None:
         result = self._commandes.orders_order_id_get(order_id=order.order_id)
@@ -107,12 +112,14 @@ class HelloAssoApi:
             )
             new_member.save()
 
-    def get_event_form_orders(self, form: EventForm) -> None:
+    def get_event_form_orders(self, form: EventForm, since: datetime | None = None) -> int:
         result = self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get(
             organization_slug=self.organization_slug,
             form_slug=form.form_slug,
             form_type=form.form_type,
+            var_from=since,
         )
+        new_registrations = 0
         for i in result.data or []:
             order, _ = EventFormOrder.objects.get_or_create(
                 order_id=i.id,
@@ -126,7 +133,7 @@ class HelloAssoApi:
                 }
             )
             for item in i.items or []:
-                EventRegistration.objects.get_or_create(
+                _, created = EventRegistration.objects.get_or_create(
                     item_id=item.id,
                     defaults={
                         "order": order,
@@ -135,8 +142,11 @@ class HelloAssoApi:
                         "last_name": item.user.last_name if item.user else None,
                     }
                 )
+                if created:
+                    new_registrations += 1
         form.last_registration_updated = datetime.now()
         form.save(update_fields=["last_registration_updated"])
+        return new_registrations
 
     def refresh_all_membership_forms_registry(self) -> None:
         all_forms = MemberShipForm.objects.all()

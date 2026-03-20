@@ -1,3 +1,4 @@
+import time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -30,6 +31,7 @@ class EventFormListView(LoginRequiredMixin, ListView):
         )
 
 
+
 class EventFormDetailView(LoginRequiredMixin, DetailView):
     model = EventForm
     template_name = 'helloAssoImporter/event_form_detail.html'
@@ -50,10 +52,21 @@ def notify_import_error(request, error: HelloAssoApiError):
 
 @login_required
 def refresh_event_forms(request):
+    api = get_hello_asso_api()
+    start = time.time()
     try:
-        get_hello_asso_api().refresh_event_forms()
+        forms_added = api.refresh_event_forms()
     except HelloAssoApiError as e:
         notify_import_error(request, e)
+        return redirect('inscriptions')
+    registrations_added = 0
+    for form in EventForm.objects.all():
+        try:
+            registrations_added += api.get_event_form_orders(form, since=form.last_registration_updated)
+        except HelloAssoApiError as e:
+            notify_import_error(request, e)
+    elapsed = round(time.time() - start)
+    messages.success(request, f"Import des sorties terminé. {forms_added} activité(s) et {registrations_added} inscription(s) créées en {elapsed} seconde(s).")
     return redirect('inscriptions')
 
 
