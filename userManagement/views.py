@@ -1,6 +1,7 @@
 import uuid
 
-from django.contrib.auth import get_user_model, login
+from django.contrib.auth import get_user_model, login, update_session_auth_hash
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404, redirect, render
@@ -172,3 +173,45 @@ class UserDeactivateView(AdminRequiredMixin, View):
         user.is_active = not user.is_active
         user.save()
         return redirect('userManagement:user_list')
+
+
+class ChangePasswordForm(forms.Form):
+    old_password = forms.CharField(label='Ancien mot de passe', widget=forms.PasswordInput)
+    new_password1 = forms.CharField(label='Nouveau mot de passe', widget=forms.PasswordInput)
+    new_password2 = forms.CharField(label='Répéter le nouveau mot de passe', widget=forms.PasswordInput)
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data['old_password']
+        if not self.user.check_password(old_password):
+            raise forms.ValidationError("Mot de passe incorrect.")
+        return old_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get('new_password1')
+        p2 = cleaned_data.get('new_password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Les nouveaux mots de passe ne correspondent pas.')
+        return cleaned_data
+
+
+class ChangePasswordView(LoginRequiredMixin, FormView):
+    template_name = 'userManagement/change_password.html'
+    form_class = ChangePasswordForm
+    success_url = reverse_lazy('userManagement:change_password')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        self.request.user.set_password(form.cleaned_data['new_password1'])
+        self.request.user.save()
+        update_session_auth_hash(self.request, self.request.user)
+        messages.success(self.request, 'Mot de passe mis à jour avec succès.')
+        return super().form_valid(form)
