@@ -1,12 +1,11 @@
 ## Rôles utilisateurs
 
-| Rôle | Gestion des utilisateurs | Inscriptions |
-|------|--------------------------|--------------|
-| **admin** | Oui (inviter, changer les rôles, supprimer) | Oui |
-| **manager** | Non | Oui |
-| **viewer** | Non | Oui |
-
-> `manager` et `viewer` ont les mêmes droits dans l'implémentation actuelle. La distinction est réservée à un usage futur.
+| Rôle | Label | Gestion des utilisateurs | Sorties |
+|------|-------|--------------------------|---------|
+| `admin` | Administrateur | Oui (inviter, changer les rôles, supprimer) | Oui |
+| `member` | Membre | Non | Oui |
+| `instructor` | Formateur | Non | Oui |
+| `dive_director` | Directeur de plongée | Non | Oui |
 
 ## Run local server
 ```

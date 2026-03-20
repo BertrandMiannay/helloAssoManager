@@ -8,6 +8,7 @@ import helloasso_python
 from helloasso_python.api.formulaires_api import FormulairesApi
 from helloasso_python.api.commandes_api import CommandesApi
 from helloasso_python.api_client import ApiClient
+from helloasso_python.models import HelloAssoApiV5ModelsFormsFormQuickCreateRequest, HelloAssoApiV5ModelsCommonPlaceModel
 from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
 
 logger = logging.getLogger(__name__)
@@ -156,10 +157,6 @@ class HelloAssoApi:
         return new_registrations
 
     def create_event_form(self, data: dict) -> None:
-        from helloasso_python.models import (
-            HelloAssoApiV5ModelsFormsFormQuickCreateRequest,
-            HelloAssoApiV5ModelsCommonPlaceModel,
-        )
         place = None
         if data.get('place'):
             place = HelloAssoApiV5ModelsCommonPlaceModel(
