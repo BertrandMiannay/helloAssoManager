@@ -51,13 +51,12 @@
                 {% if u != request.user %}
                     {% if not u.invite_url %}
                         <a href="{% url 'userManagement:user_role' u.pk %}" class="btn btn-secondary">Rôle</a>
-                        <form method="post" action="{% url 'userManagement:user_deactivate' u.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}">
-                                {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
-                            </button>
-                        </form>
                     {% endif %}
+                    <form method="post" action="{% url 'userManagement:user_delete' u.pk %}" style="display:inline;"
+                          onsubmit="return confirm('Supprimer {{ u.email }} ? Cette action est irréversible.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </form>
                 {% endif %}
             </td>
         </tr>

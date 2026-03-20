@@ -171,11 +171,12 @@ class AcceptInviteView(View):
         return render(request, self.template_name, {'form': form, 'email': user.email})
 
 
-class UserDeactivateView(AdminRequiredMixin, View):
+
+class UserDeleteView(AdminRequiredMixin, View):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        user.is_active = not user.is_active
-        user.save()
+        if user != request.user:
+            user.delete()
         return redirect('userManagement:user_list')
 
 

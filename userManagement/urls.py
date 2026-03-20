@@ -9,6 +9,6 @@ urlpatterns = [
     path('<int:pk>/role/', views.UserRoleUpdateView.as_view(), name='user_role'),
     path('invite/', views.InviteView.as_view(), name='invite'),
     path('accept/<uuid:token>/', views.AcceptInviteView.as_view(), name='accept_invite'),
-    path('<int:pk>/deactivate/', views.UserDeactivateView.as_view(), name='user_deactivate'),
     path('password/', views.ChangePasswordView.as_view(), name='change_password'),
+    path('<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
 ]
