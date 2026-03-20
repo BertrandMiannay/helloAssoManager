@@ -66,5 +66,5 @@ def refresh_event_forms(request):
         except HelloAssoApiError as e:
             notify_import_error(request, e)
     elapsed = round(time.time() - start)
-    messages.success(request, f"Import des sorties terminé. {forms_added} activité(s) et {registrations_added} inscription(s) créées en {elapsed} seconde(s).")
+    messages.success(request, f"Import terminé. {forms_added} sortie(s) et {registrations_added} inscription(s) créées en {elapsed} seconde(s).")
     return redirect('inscriptions')
