@@ -155,6 +155,35 @@ class HelloAssoApi:
         form.save(update_fields=["last_registration_updated"])
         return new_registrations
 
+    def create_event_form(self, data: dict) -> None:
+        from helloasso_python.models import (
+            HelloAssoApiV5ModelsFormsFormQuickCreateRequest,
+            HelloAssoApiV5ModelsCommonPlaceModel,
+        )
+        place = None
+        if data.get('place'):
+            place = HelloAssoApiV5ModelsCommonPlaceModel(
+                address=data['place'],
+                country='FRA',
+            )
+        body = HelloAssoApiV5ModelsFormsFormQuickCreateRequest(
+            title=data['title'],
+            description=data.get('description') or None,
+            long_description=data.get('long_description') or None,
+            start_date=data.get('start_date'),
+            end_date=data.get('end_date'),
+            max_entries=data.get('max_entries'),
+            place=place,
+        )
+        try:
+            self._formulaires.organizations_organization_slug_forms_form_type_action_quick_create_post(
+                organization_slug=self.organization_slug,
+                form_type='Event',
+                hello_asso_api_v5_models_forms_form_quick_create_request=body,
+            )
+        except Exception as e:
+            raise HelloAssoApiError(str(e)) from e
+
     def refresh_all_membership_forms_registry(self) -> None:
         all_forms = MemberShipForm.objects.all()
         for form in all_forms:

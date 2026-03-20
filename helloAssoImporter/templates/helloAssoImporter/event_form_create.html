@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Créer une sortie{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Créer une sortie</h1>
+    <a href="{% url 'inscriptions' %}" class="btn btn-secondary">Retour</a>
+</div>
+
+<form method="post" class="form-card" style="max-width:700px;">
+    {% csrf_token %}
+
+    <h2 style="font-size:1.1rem; margin-bottom:1rem;">Informations générales</h2>
+
+    <div class="form-group">
+        <label for="id_title">Titre *</label>
+        {{ form.title }}
+        {% if form.title.errors %}<p style="color:#dc3545; font-size:0.85rem;">{{ form.title.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="id_description">Description courte</label>
+        {{ form.description }}
+    </div>
+
+    <div class="form-group">
+        <label for="id_long_description">Description longue</label>
+        {{ form.long_description }}
+    </div>
+
+    <h2 style="font-size:1.1rem; margin:1.5rem 0 1rem;">Dates</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div class="form-group">
+            <label for="id_start_date">Date de début</label>
+            {{ form.start_date }}
+        </div>
+        <div class="form-group">
+            <label for="id_end_date">Date de fin</label>
+            {{ form.end_date }}
+        </div>
+    </div>
+
+    <h2 style="font-size:1.1rem; margin:1.5rem 0 1rem;">Lieu</h2>
+
+    <div class="form-group">
+        <label for="id_place">Adresse</label>
+        {{ form.place }}
+    </div>
+
+    <h2 style="font-size:1.1rem; margin:1.5rem 0 1rem;">Options</h2>
+
+    <div class="form-group">
+        <label for="id_max_entries">Nombre max de participants</label>
+        {{ form.max_entries }}
+    </div>
+
+    <div class="form-actions" style="margin-top:1.5rem;">
+        <button type="submit" class="btn btn-primary">Créer la sortie</button>
+        <a href="{% url 'inscriptions' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+</form>
+{% endblock %}
