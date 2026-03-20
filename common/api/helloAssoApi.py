@@ -3,6 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from django.utils import timezone
 import helloasso_python
 from helloasso_python.api.formulaires_api import FormulairesApi
 from helloasso_python.api.commandes_api import CommandesApi
@@ -46,24 +47,29 @@ class HelloAssoApi:
             raise HelloAssoApiError(f"Échec d'authentification HelloAsso ({response.status_code})")
         return response.json()["access_token"]
 
-    def refresh_membership_forms(self) -> None:
+    def refresh_membership_forms(self) -> int:
         result = self._formulaires.organizations_organization_slug_forms_get(
             organization_slug=self.organization_slug,
             form_types=["Membership"],
             states=["Public", "Private"],
         )
+        new_count = 0
         for i in result.data or []:
-            new_form = MemberShipForm(
+            _, created = MemberShipForm.objects.get_or_create(
                 form_slug=i.form_slug,
-                title=i.title,
-                form_type=i.form_type,
-                description=i.description,
-                start_date=i.start_date,
-                end_date=i.end_date,
-                updated_at=i.meta.updated_at if i.meta else None,
-                created_at=i.meta.created_at if i.meta else None,
+                defaults={
+                    "title": i.title,
+                    "form_type": i.form_type,
+                    "description": i.description,
+                    "start_date": i.start_date,
+                    "end_date": i.end_date,
+                    "updated_at": i.meta.updated_at if i.meta else None,
+                    "created_at": i.meta.created_at if i.meta else None,
+                }
             )
-            new_form.save()
+            if created:
+                new_count += 1
+        return new_count
 
     def refresh_event_forms(self) -> int:
         result = self._formulaires.organizations_organization_slug_forms_get(
@@ -118,6 +124,7 @@ class HelloAssoApi:
             form_slug=form.form_slug,
             form_type=form.form_type,
             var_from=since,
+            page_size=100,
         )
         new_registrations = 0
         for i in result.data or []:
@@ -144,7 +151,7 @@ class HelloAssoApi:
                 )
                 if created:
                     new_registrations += 1
-        form.last_registration_updated = datetime.now()
+        form.last_registration_updated = timezone.now()
         form.save(update_fields=["last_registration_updated"])
         return new_registrations
 

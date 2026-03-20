@@ -12,6 +12,13 @@ from django import forms
 User = get_user_model()
 
 
+def _check_passwords_match(cleaned_data, field1, field2):
+    p1 = cleaned_data.get(field1)
+    p2 = cleaned_data.get(field2)
+    if p1 and p2 and p1 != p2:
+        raise forms.ValidationError('Les mots de passe ne correspondent pas.')
+
+
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = 'home.html'
 
@@ -75,10 +82,7 @@ class AcceptInviteForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        p1 = cleaned_data.get('password1')
-        p2 = cleaned_data.get('password2')
-        if p1 and p2 and p1 != p2:
-            raise forms.ValidationError('Les mots de passe ne correspondent pas.')
+        _check_passwords_match(cleaned_data, 'password1', 'password2')
         return cleaned_data
 
 
@@ -192,10 +196,7 @@ class ChangePasswordForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        p1 = cleaned_data.get('new_password1')
-        p2 = cleaned_data.get('new_password2')
-        if p1 and p2 and p1 != p2:
-            raise forms.ValidationError('Les nouveaux mots de passe ne correspondent pas.')
+        _check_passwords_match(cleaned_data, 'new_password1', 'new_password2')
         return cleaned_data
 
 
