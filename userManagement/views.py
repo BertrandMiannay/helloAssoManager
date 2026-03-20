@@ -24,7 +24,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        is_admin = self.request.user.groups.filter(name='admin').exists()
+        is_admin = self.request.user.is_administrator
         ctx['apps'] = [
 
             {
@@ -47,14 +47,15 @@ class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """Allow access only to users in the 'admin' group."""
 
     def test_func(self):
-        return self.request.user.groups.filter(name='admin').exists()
+        return self.request.user.is_administrator
 
 
 class UserRoleForm(forms.Form):
     role = forms.ChoiceField(choices=[
-        ('admin', 'Admin'),
-        ('manager', 'Manager'),
-        ('viewer', 'Viewer'),
+        ('member', 'Membre'),
+        ('instructor', 'Formateur'),
+        ('dive_director', 'Directeur de plongée'),
+        ('admin', 'Administrateur'),
     ])
 
 

@@ -41,7 +41,7 @@
 <nav>
     {% if user.is_authenticated %}
         <a href="/" class="brand">TP manager</a>
-        {% if user.groups.all|length > 0 and user.groups.all.0.name == 'admin' or user.is_superuser %}
+        {% if user.is_administrator or user.is_superuser %}
             <a href="/users/">Utilisateurs</a>
         {% endif %}
         <a href="/inscriptions/">Inscriptions</a>

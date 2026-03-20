@@ -6,3 +6,7 @@ from django.db import models
 class CustomUser(AbstractUser):
     invite_token = models.UUIDField(null=True, blank=True, unique=True)
     invite_url = models.TextField(null=True, blank=True)
+
+    @property
+    def is_administrator(self):
+        return self.groups.filter(name='admin').exists()
