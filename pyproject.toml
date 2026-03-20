@@ -9,7 +9,6 @@ readme = "README.md"
 python = "^3.13"
 django = "^5.2.4"
 requests = "^2.32.4"
-helloasso-apiv5 = "^1.0.0"
 dotenv = "^0.9.9"
 django-tables2 = "^2.7.5"
 django-allauth = "^65.14.3"
@@ -18,7 +17,8 @@ gunicorn = "^23.0.0"
 psycopg2-binary = "^2.9.10"
 dj-database-url = "^2.3.0"
 whitenoise = "^6.9.0"
-jsonschema = "^4.26.0"
+helloasso-python = "^1.0.8"
+authlib = "^1.6.9"
 
 
 [build-system]
