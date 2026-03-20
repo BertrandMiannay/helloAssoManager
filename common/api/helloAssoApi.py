@@ -8,6 +8,7 @@ from jsonschema import validate, ValidationError
 import os
 from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
 from datetime import datetime
+import helloasso_python
 
 _schema_dir = Path(__file__).parent
 with open(_schema_dir / "event_form_schema.json") as f:
@@ -38,6 +39,7 @@ class HelloAssoApi:
         if not client_id or not client_secret or not self.organization_slug:
             raise Exception("missing credentials")
         
+        # LEGACY
         self.hello_asso_api = HaApiV5(
             api_base='api.helloasso.com',
             client_id=client_id,
@@ -45,6 +47,15 @@ class HelloAssoApi:
             timeout=60
         )
 
+        self.token = self.get_access_token(client_id, client_secret)
+        self.hello_asso_api_2 = helloasso_python.Configuration(client_id=client_id, client_secret=client_secret)
+
+    def get_access_token(self):
+        token = client.fetch_token(token_url, grant_type='client_credentials')
+        print("Access Token:", token['access_token'])
+        print("Expires In:", token['expires_in'])
+        print("Refresh Token:", token['refresh_token'])
+        return token
 
     def refresh_membership_forms(self,) -> None:
         url = f"/v5/organizations/{self.organization_slug}/forms"
