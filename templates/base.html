@@ -44,6 +44,7 @@
         {% if user.is_administrator or user.is_superuser %}
             <a href="/users/">Utilisateurs</a>
         {% endif %}
+        <a href="/membres/">Membres</a>
         <a href="/inscriptions/">Sorties</a>
         <span class="spacer"></span>
         <a href="{% url 'userManagement:change_password' %}">{{ user.username }}</a>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Membres{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Membres</h1>
+    <a href="{% url 'membres-refresh' %}" class="btn btn-primary">Rafraîchir</a>
+</div>
+
+{% if membership_forms %}
+<table>
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Date de début</th>
+            <th>Date de fin</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for form in membership_forms %}
+        <tr>
+            <td>{{ form.title }}</td>
+            <td>{{ form.start_date|date:"d/m/Y" }}</td>
+            <td>{{ form.end_date|date:"d/m/Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#999;">Aucun formulaire d'adhésion. Cliquez sur Rafraîchir pour importer depuis HelloAsso.</p>
+{% endif %}
+{% endblock %}

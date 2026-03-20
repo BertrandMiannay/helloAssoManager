@@ -23,7 +23,8 @@ class EventFormCreateForm(forms.Form):
 
 class MemberShipFormListView(LoginRequiredMixin, ListView):
     model = MemberShipForm
-    template_name = 'forms.html'
+    template_name = 'helloAssoImporter/membership_forms.html'
+    context_object_name = 'membership_forms'
 
 
 class MemberShipFormOrderListView(LoginRequiredMixin, ListView):
@@ -58,6 +59,17 @@ class EventFormDetailView(LoginRequiredMixin, DetailView):
 
 def notify_api_error(request, error: HelloAssoApiError):
     messages.error(request, f"Échec du rafraîchissement : {error}")
+
+
+@login_required
+def refresh_membership_forms(request):
+    api = get_hello_asso_api()
+    try:
+        count = api.refresh_membership_forms()
+        messages.success(request, f"{count} formulaire(s) d'adhésion importé(s).")
+    except HelloAssoApiError as e:
+        notify_api_error(request, e)
+    return redirect('membres')
 
 
 @login_required
