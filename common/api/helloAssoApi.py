@@ -8,12 +8,19 @@ import helloasso_python
 from helloasso_python.api.formulaires_api import FormulairesApi
 from helloasso_python.api.commandes_api import CommandesApi
 from helloasso_python.api_client import ApiClient
+from helloasso_python.exceptions import ApiException
 from helloasso_python.models import HelloAssoApiV5ModelsFormsFormQuickCreateRequest, HelloAssoApiV5ModelsCommonPlaceModel
 from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
 
 logger = logging.getLogger(__name__)
 
 TOKEN_URL = "https://api.helloasso.com/oauth2/token"
+
+# HelloAsso custom field names for membership forms
+FIELD_EMAIL = "Adresse Mail"
+FIELD_BIRTHDATE = "Date de naissance"
+FIELD_SEX = "Sexe"
+FIELD_LICENCE = "Numéro de licence"
 
 
 class HelloAssoApiError(Exception):
@@ -34,6 +41,9 @@ class HelloAssoApi:
         access_token = self._fetch_access_token(client_id, client_secret)
         configuration = helloasso_python.Configuration(access_token=access_token)
         api_client = ApiClient(configuration=configuration)
+        self._api_client = api_client
+        self._client_id = client_id
+        self._client_secret = client_secret
         self._formulaires = FormulairesApi(api_client)
         self._commandes = CommandesApi(api_client)
 
@@ -48,8 +58,25 @@ class HelloAssoApi:
             raise HelloAssoApiError(f"Échec d'authentification HelloAsso ({response.status_code})")
         return response.json()["access_token"]
 
+    def _reauthenticate(self) -> None:
+        token = self._fetch_access_token(self._client_id, self._client_secret)
+        self._api_client.configuration.access_token = token
+
+    def _call(self, fn, *args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except ApiException as e:
+            if e.status == 401:
+                self._reauthenticate()
+                try:
+                    return fn(*args, **kwargs)
+                except ApiException as e2:
+                    raise HelloAssoApiError(str(e2)) from e2
+            raise HelloAssoApiError(str(e)) from e
+
     def refresh_membership_forms(self) -> int:
-        result = self._formulaires.organizations_organization_slug_forms_get(
+        result = self._call(
+            self._formulaires.organizations_organization_slug_forms_get,
             organization_slug=self.organization_slug,
             form_types=["Membership"],
             states=["Public", "Private"],
@@ -73,7 +100,8 @@ class HelloAssoApi:
         return new_count
 
     def refresh_event_forms(self) -> int:
-        result = self._formulaires.organizations_organization_slug_forms_get(
+        result = self._call(
+            self._formulaires.organizations_organization_slug_forms_get,
             organization_slug=self.organization_slug,
             form_types=["Event"],
             states=["Public", "Private"],
@@ -99,10 +127,10 @@ class HelloAssoApi:
         return new_count
 
     def get_member_registry(self, order: MemberShipFormOrder) -> None:
-        result = self._commandes.orders_order_id_get(order_id=order.order_id)
+        result = self._call(self._commandes.orders_order_id_get, order_id=order.order_id)
         for i in result.items or []:
             custom = {f.name: f.answer for f in (i.custom_fields or [])}
-            birthdate = custom.get("Date de naissance")
+            birthdate = custom.get(FIELD_BIRTHDATE)
             if birthdate:
                 birthdate = datetime.strptime(birthdate, "%d/%m/%Y")
             new_member = Member(
@@ -112,15 +140,16 @@ class HelloAssoApi:
                 first_name=i.user.first_name if i.user else None,
                 last_name=i.user.last_name if i.user else None,
                 birhdate=birthdate,
-                licence_number=custom.get("Numéro de licence", ""),
-                sex=custom.get("Sexe"),
-                email=custom.get("Adresse Mail"),
+                licence_number=custom.get(FIELD_LICENCE, ""),
+                sex=custom.get(FIELD_SEX),
+                email=custom.get(FIELD_EMAIL),
                 caci_expiration=None,
             )
             new_member.save()
 
     def get_event_form_orders(self, form: EventForm, since: datetime | None = None) -> int:
-        result = self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get(
+        result = self._call(
+            self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
             organization_slug=self.organization_slug,
             form_slug=form.form_slug,
             form_type=form.form_type,
@@ -172,19 +201,48 @@ class HelloAssoApi:
             max_entries=data.get('max_entries'),
             place=place,
         )
-        try:
-            self._formulaires.organizations_organization_slug_forms_form_type_action_quick_create_post(
-                organization_slug=self.organization_slug,
-                form_type='Event',
-                hello_asso_api_v5_models_forms_form_quick_create_request=body,
-            )
-        except Exception as e:
-            raise HelloAssoApiError(str(e)) from e
+        self._call(
+            self._formulaires.organizations_organization_slug_forms_form_type_action_quick_create_post,
+            organization_slug=self.organization_slug,
+            form_type='Event',
+            hello_asso_api_v5_models_forms_form_quick_create_request=body,
+        )
 
-    def refresh_all_membership_forms_registry(self) -> None:
-        all_forms = MemberShipForm.objects.all()
-        for form in all_forms:
-            self.get_form_orders(form)
+    def fetch_membership_form_members(self, form: MemberShipForm) -> list[dict]:
+        """Fetch all members for a membership form without saving to DB."""
+        members = []
+        continuation_token = None
+        while True:
+            result = self._call(
+                self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
+                organization_slug=self.organization_slug,
+                form_slug=form.form_slug,
+                form_type=form.form_type,
+                page_size=100,
+                with_details=True,
+                continuation_token=continuation_token,
+            )
+            page_data = result.data or []
+            for order in page_data:
+                for item in order.items or []:
+                    custom = {f.name: f.answer for f in (item.custom_fields or [])}
+                    members.append({
+                        'id': item.id,
+                        'category': item.name,
+                        'first_name': item.user.first_name if item.user else None,
+                        'last_name': item.user.last_name if item.user else None,
+                        'email': custom.get(FIELD_EMAIL),
+                        'birthdate': custom.get(FIELD_BIRTHDATE),
+                        'sex': custom.get(FIELD_SEX),
+                        'licence_number': custom.get(FIELD_LICENCE),
+                        'payer_email': order.payer.email if order.payer else None,
+                        'custom_fields': custom,
+                    })
+            next_token = result.pagination.continuation_token if result.pagination else None
+            if not next_token or next_token == continuation_token or not page_data:
+                break
+            continuation_token = next_token
+        return members
 
 
 _hello_asso_api_instance: HelloAssoApi | None = None

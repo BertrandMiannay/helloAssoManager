@@ -1,0 +1,48 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}{{ membership_form.title }}{% endblock %}
+
+{% block saison_content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <a href="{% url 'saison-formulaires' %}" style="color:#666; text-decoration:none;">← Retour</a>
+    <h1 style="margin-bottom:0;">{{ membership_form.title }}</h1>
+</div>
+
+<form method="post" style="margin-bottom:2rem;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Rafraîchir les inscrits</button>
+</form>
+
+{% if members is not None %}
+    {% if members %}
+    <p style="color:#666; margin-bottom:1rem;">{{ members|length }} inscrit(s)</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Catégorie</th>
+                <th>Email</th>
+                <th>Date de naissance</th>
+                <th>Sexe</th>
+                <th>N° licence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.first_name|default:"—" }}</td>
+                <td>{{ member.last_name|default:"—" }}</td>
+                <td>{{ member.category|default:"—" }}</td>
+                <td>{{ member.email|default:"—" }}</td>
+                <td>{{ member.birthdate|default:"—" }}</td>
+                <td>{{ member.sex|default:"—" }}</td>
+                <td>{{ member.licence_number|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#999;">Aucun inscrit trouvé pour ce formulaire.</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

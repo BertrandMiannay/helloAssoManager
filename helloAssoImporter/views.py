@@ -3,7 +3,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
@@ -121,6 +121,23 @@ def assign_season(request):
         except MemberShipForm.DoesNotExist:
             pass
     return redirect('saison-formulaires')
+
+
+@admin_required
+def membership_form_detail(request, form_slug):
+    membership_form = get_object_or_404(MemberShipForm, pk=form_slug)
+    members = None
+    if request.method == 'POST':
+        api = get_hello_asso_api()
+        try:
+            members = api.fetch_membership_form_members(membership_form)
+        except HelloAssoApiError as e:
+            notify_api_error(request, e)
+    return render(request, 'helloAssoImporter/membership_form_detail.html', {
+        'membership_form': membership_form,
+        'members': members,
+        'active_tab': 'formulaires',
+    })
 
 
 @admin_required

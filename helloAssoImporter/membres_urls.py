@@ -9,4 +9,5 @@ urlpatterns = [
     path('formation/', views.formation, name='saison-formation'),
     path('set-current/<int:pk>/', views.set_current_season, name='saison-set-current'),
     path('delete/<int:pk>/', views.delete_season, name='saison-delete'),
+    path('<slug:form_slug>/', views.membership_form_detail, name='saison-form-detail'),
 ]

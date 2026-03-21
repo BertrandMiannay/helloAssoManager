@@ -20,7 +20,7 @@
     <tbody>
         {% for form in membership_forms %}
         <tr>
-            <td>{{ form.title }}</td>
+            <td><a href="{% url 'saison-form-detail' form.form_slug %}">{{ form.title }}</a></td>
             <td>{{ form.start_date|date:"d/m/Y" }}</td>
             <td>{{ form.end_date|date:"d/m/Y" }}</td>
             <td>
