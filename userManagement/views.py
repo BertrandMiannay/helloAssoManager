@@ -1,4 +1,5 @@
 import uuid
+from functools import wraps
 
 from django.contrib.auth import get_user_model, login, update_session_auth_hash
 from django.contrib import messages
@@ -8,6 +9,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView, UpdateView, FormView, View, TemplateView
 from django.urls import reverse, reverse_lazy
 from django import forms
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('account_login')
+        if not (request.user.is_administrator or request.user.is_superuser):
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 User = get_user_model()
 
@@ -47,7 +59,7 @@ class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """Allow access only to users in the 'admin' group."""
 
     def test_func(self):
-        return self.request.user.is_administrator
+        return self.request.user.is_administrator or self.request.user.is_superuser
 
 
 class UserRoleForm(forms.Form):

@@ -3,13 +3,13 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from userManagement.views import AdminRequiredMixin
 from django.shortcuts import redirect, render
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count
+from userManagement.views import AdminRequiredMixin, admin_required
 
 
 class EventFormCreateForm(forms.Form):
@@ -68,18 +68,15 @@ def notify_api_error(request, error: HelloAssoApiError):
     messages.error(request, f"Échec du rafraîchissement : {error}")
 
 
-@login_required
+@admin_required
 def season_gestion(request):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     form_data = {}
     if request.method == 'POST':
         label = request.POST.get('label', '').strip()
-        current = bool(request.POST.get('current'))
         if label:
-            Season.objects.create(label=label, current=current)
+            Season.objects.create(label=label)
             return redirect('saison-gestion')
-        form_data = {'label': label, 'current': current}
+        form_data = {'label': label}
     seasons = Season.objects.all().order_by('-current', 'label')
     return render(request, 'helloAssoImporter/season_gestion.html', {
         'seasons': seasons,
@@ -88,36 +85,28 @@ def season_gestion(request):
     })
 
 
-@login_required
+@admin_required
 def set_current_season(request, pk):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     if request.method == 'POST':
         Season.objects.update(current=False)
         Season.objects.filter(pk=pk).update(current=True)
     return redirect('saison-gestion')
 
 
-@login_required
+@admin_required
 def delete_season(request, pk):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     if request.method == 'POST':
         Season.objects.filter(pk=pk).delete()
     return redirect('saison-gestion')
 
 
-@login_required
+@admin_required
 def formation(request):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     return render(request, 'helloAssoImporter/formation.html', {'active_tab': 'formation'})
 
 
-@login_required
+@admin_required
 def assign_season(request):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     if request.method == 'POST':
         form_slug = request.POST.get('form_slug')
         season_id = request.POST.get('season_id') or None
@@ -134,10 +123,8 @@ def assign_season(request):
     return redirect('saison-formulaires')
 
 
-@login_required
+@admin_required
 def refresh_membership_forms(request):
-    if not request.user.is_administrator and not request.user.is_superuser:
-        return redirect('home')
     api = get_hello_asso_api()
     try:
         count = api.refresh_membership_forms()
