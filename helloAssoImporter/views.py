@@ -3,6 +3,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from userManagement.views import AdminRequiredMixin
 from django.shortcuts import redirect, render
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
@@ -21,7 +22,7 @@ class EventFormCreateForm(forms.Form):
     max_entries = forms.IntegerField(label='Nombre max de participants', required=False, min_value=1)
 
 
-class MemberShipFormListView(LoginRequiredMixin, ListView):
+class MemberShipFormListView(AdminRequiredMixin, ListView):
     model = MemberShipForm
     template_name = 'helloAssoImporter/membership_forms.html'
     context_object_name = 'membership_forms'
@@ -63,13 +64,15 @@ def notify_api_error(request, error: HelloAssoApiError):
 
 @login_required
 def refresh_membership_forms(request):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
     api = get_hello_asso_api()
     try:
         count = api.refresh_membership_forms()
         messages.success(request, f"{count} formulaire(s) d'adhésion importé(s).")
     except HelloAssoApiError as e:
         notify_api_error(request, e)
-    return redirect('membres')
+    return redirect('saison')
 
 
 @login_required
