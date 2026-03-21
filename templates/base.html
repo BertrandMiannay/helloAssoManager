@@ -45,7 +45,7 @@
             <a href="/users/">Utilisateurs</a>
         {% endif %}
         {% if user.is_administrator or user.is_superuser %}
-            <a href="/saison/">Saison</a>
+            <a href="{% url 'saison-formulaires' %}">Saison</a>
         {% endif %}
         <a href="/inscriptions/">Sorties</a>
         <span class="spacer"></span>

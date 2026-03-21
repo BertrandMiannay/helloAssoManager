@@ -1,0 +1,53 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Saison{% endblock %}
+
+{% block saison_content %}
+<h1 style="margin-bottom:1.5rem;">Créer une saison</h1>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="label">Label</label>
+            <input type="text" id="label" name="label" placeholder="ex : 2024-2025" maxlength="20" required value="{{ form_data.label|default:'' }}">
+        </div>
+<div class="form-actions">
+            <button type="submit" class="btn btn-primary">Créer</button>
+        </div>
+    </form>
+</div>
+
+{% if seasons %}
+<h2 style="margin:2rem 0 1rem;">Saisons existantes</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Label</th>
+            <th>Saison active</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for season in seasons %}
+        <tr>
+            <td>{{ season.label }}</td>
+            <td>{% if season.current %}★{% endif %}</td>
+            <td style="display:flex; gap:0.5rem;">
+                {% if not season.current %}
+                <form method="post" action="{% url 'saison-set-current' season.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary" style="font-size:0.8rem; padding:0.2rem 0.75rem;">Rendre active</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{% url 'saison-delete' season.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" style="font-size:0.8rem; padding:0.2rem 0.75rem;"
+                            onclick="return confirm('Supprimer la saison « {{ season.label }} » ?')">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

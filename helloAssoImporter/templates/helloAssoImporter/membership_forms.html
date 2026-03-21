@@ -1,10 +1,9 @@
-{% extends "base.html" %}
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Formulaires d'inscription{% endblock %}
 
-{% block title %}Membres{% endblock %}
-
-{% block content %}
+{% block saison_content %}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
-    <h1 style="margin-bottom:0;">Membres</h1>
+    <h1 style="margin-bottom:0;">Formulaires d'inscription</h1>
     <a href="{% url 'saison-refresh' %}" class="btn btn-primary">Rafraîchir</a>
 </div>
 
@@ -15,6 +14,7 @@
             <th>Titre</th>
             <th>Date de début</th>
             <th>Date de fin</th>
+            <th>Saison</th>
         </tr>
     </thead>
     <tbody>
@@ -23,6 +23,20 @@
             <td>{{ form.title }}</td>
             <td>{{ form.start_date|date:"d/m/Y" }}</td>
             <td>{{ form.end_date|date:"d/m/Y" }}</td>
+            <td>
+                <form method="post" action="{% url 'saison-assign' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_slug" value="{{ form.form_slug }}">
+                    <select name="season_id" onchange="this.form.submit()" style="padding:0.25rem 0.5rem; border:1px solid #ccc; border-radius:4px;">
+                        <option value="">—</option>
+                        {% for season in seasons %}
+                        <option value="{{ season.id }}" {% if form.season_id == season.id %}selected{% endif %}>
+                            {{ season.label }}{% if season.current %} ★{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

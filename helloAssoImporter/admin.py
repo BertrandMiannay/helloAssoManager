@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
+from .models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
+admin.site.register(Season)
 admin.site.register(MemberShipForm)
 admin.site.register(MemberShipFormOrder)
 admin.site.register(EventForm)

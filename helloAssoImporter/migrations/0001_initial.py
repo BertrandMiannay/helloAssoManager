@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ('end_date', models.DateTimeField()),
                 ('updated_at', models.DateTimeField()),
                 ('created_at', models.DateTimeField()),
-                ('season', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='helloAssoImporter.season')),
+                ('season', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='helloAssoImporter.season')),
             ],
         ),
         migrations.CreateModel(

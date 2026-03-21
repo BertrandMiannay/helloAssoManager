@@ -7,7 +7,7 @@ from userManagement.views import AdminRequiredMixin
 from django.shortcuts import redirect, render
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
-from helloAssoImporter.models import MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
+from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count
 
@@ -26,6 +26,12 @@ class MemberShipFormListView(AdminRequiredMixin, ListView):
     model = MemberShipForm
     template_name = 'helloAssoImporter/membership_forms.html'
     context_object_name = 'membership_forms'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['seasons'] = Season.objects.all().order_by('-current', 'label')
+        ctx['active_tab'] = 'formulaires'
+        return ctx
 
 
 class MemberShipFormOrderListView(LoginRequiredMixin, ListView):
@@ -63,6 +69,72 @@ def notify_api_error(request, error: HelloAssoApiError):
 
 
 @login_required
+def season_gestion(request):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
+    form_data = {}
+    if request.method == 'POST':
+        label = request.POST.get('label', '').strip()
+        current = bool(request.POST.get('current'))
+        if label:
+            Season.objects.create(label=label, current=current)
+            return redirect('saison-gestion')
+        form_data = {'label': label, 'current': current}
+    seasons = Season.objects.all().order_by('-current', 'label')
+    return render(request, 'helloAssoImporter/season_gestion.html', {
+        'seasons': seasons,
+        'form_data': form_data,
+        'active_tab': 'gestion',
+    })
+
+
+@login_required
+def set_current_season(request, pk):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
+    if request.method == 'POST':
+        Season.objects.update(current=False)
+        Season.objects.filter(pk=pk).update(current=True)
+    return redirect('saison-gestion')
+
+
+@login_required
+def delete_season(request, pk):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
+    if request.method == 'POST':
+        Season.objects.filter(pk=pk).delete()
+    return redirect('saison-gestion')
+
+
+@login_required
+def formation(request):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
+    return render(request, 'helloAssoImporter/formation.html', {'active_tab': 'formation'})
+
+
+@login_required
+def assign_season(request):
+    if not request.user.is_administrator and not request.user.is_superuser:
+        return redirect('home')
+    if request.method == 'POST':
+        form_slug = request.POST.get('form_slug')
+        season_id = request.POST.get('season_id') or None
+        try:
+            membership_form = MemberShipForm.objects.get(pk=form_slug)
+            if season_id and MemberShipForm.objects.filter(season_id=int(season_id)).exclude(pk=form_slug).exists():
+                season = Season.objects.get(pk=int(season_id))
+                messages.error(request, f"La saison « {season.label} » est déjà associée à un autre formulaire.")
+            else:
+                membership_form.season_id = int(season_id) if season_id else None
+                membership_form.save()
+        except MemberShipForm.DoesNotExist:
+            pass
+    return redirect('saison-formulaires')
+
+
+@login_required
 def refresh_membership_forms(request):
     if not request.user.is_administrator and not request.user.is_superuser:
         return redirect('home')
@@ -72,7 +144,7 @@ def refresh_membership_forms(request):
         messages.success(request, f"{count} formulaire(s) d'adhésion importé(s).")
     except HelloAssoApiError as e:
         notify_api_error(request, e)
-    return redirect('saison')
+    return redirect('saison-formulaires')
 
 
 @login_required

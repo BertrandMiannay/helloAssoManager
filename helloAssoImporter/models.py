@@ -1,5 +1,18 @@
 from django.db import models
 
+
+class Season(models.Model):
+    label = models.CharField(max_length=20)
+    current = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.label
+
+    class Meta:
+        verbose_name = 'Saison'
+        verbose_name_plural = 'Saisons'
+
+
 class MemberShipForm(models.Model):
     form_slug = models.CharField(primary_key=True)
     title = models.CharField()
@@ -9,6 +22,7 @@ class MemberShipForm(models.Model):
     end_date = models.DateTimeField()
     updated_at = models.DateTimeField()
     created_at = models.DateTimeField()
+    season = models.OneToOneField(Season, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.form_slug
