@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
-from django.db.models import Count
+from django.db.models import Count, Q
 from userManagement.views import AdminRequiredMixin, admin_required
 
 
@@ -46,7 +46,11 @@ class EventFormListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return EventForm.objects.annotate(
-            registration_count=Count('eventformorder__eventregistration')
+            registration_count=Count('eventformorder__eventregistration'),
+            confirmed_count=Count(
+                'eventformorder__eventregistration',
+                filter=Q(eventformorder__eventregistration__state=EventRegistration.State.REGISTERED)
+            ),
         )
 
 
@@ -60,7 +64,7 @@ class EventFormDetailView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx['registrations'] = EventRegistration.objects.filter(
             order__form=self.object
-        ).select_related('order')
+        ).select_related('order').order_by('state', 'last_name', 'first_name')
         return ctx
 
 

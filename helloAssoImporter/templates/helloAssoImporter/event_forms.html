@@ -17,6 +17,7 @@
         <tr>
             <th>Titre</th>
             <th>Inscrits</th>
+            <th>Total</th>
             <th class="sortable" data-col="2" style="cursor:pointer;">Date de début <span class="sort-icon">↕</span></th>
             <th class="sortable" data-col="3" style="cursor:pointer;">Date de fin <span class="sort-icon">↕</span></th>
             <th class="sortable" data-col="4" style="cursor:pointer;">Dernière mise à jour des inscriptions <span class="sort-icon">↕</span></th>
@@ -26,6 +27,7 @@
         {% for form in event_forms %}
         <tr style="cursor:pointer;" onclick="window.location='{% url 'event-form-detail' form.form_slug %}'">
             <td><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
+            <td>{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}</td>
             <td>{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
             <td data-value="{{ form.start_date|date:'Y-m-d' }}">{{ form.start_date|date:"d/m/Y" }}</td>
             <td data-value="{{ form.end_date|date:'Y-m-d' }}">{{ form.end_date|date:"d/m/Y" }}</td>

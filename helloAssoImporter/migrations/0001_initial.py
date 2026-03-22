@@ -96,6 +96,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField()),
                 ('first_name', models.CharField()),
                 ('last_name', models.CharField()),
+                ('state', models.CharField(choices=[('Waiting', 'En attente'), ('Processed', 'Traité'), ('Registered', 'Inscrit'), ('Deleted', 'Supprimé'), ('Refunded', 'Remboursé'), ('Canceled', 'Annulé'), ('Refused', 'Refusé'), ('Contested', 'Contesté'), ('Abandoned', 'Abandonné'), ('Unknown', 'Inconnu')], default='Unknown', max_length=20)),
                 ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='helloAssoImporter.eventformorder')),
             ],
         ),

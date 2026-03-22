@@ -170,13 +170,14 @@ class HelloAssoApi:
                 }
             )
             for item in i.items or []:
-                _, created = EventRegistration.objects.get_or_create(
+                _, created = EventRegistration.objects.update_or_create(
                     item_id=item.id,
                     defaults={
                         "order": order,
                         "name": item.name,
                         "first_name": item.user.first_name if item.user else None,
                         "last_name": item.user.last_name if item.user else None,
+                        "state": item.state if item.state else EventRegistration.State.UNKNOWN,
                     }
                 )
                 if created:

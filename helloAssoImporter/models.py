@@ -57,11 +57,25 @@ class EventFormOrder(models.Model):
 
 
 class EventRegistration(models.Model):
+
+    class State(models.TextChoices):
+        WAITING = 'Waiting', 'En attente'
+        PROCESSED = 'Processed', 'Traité'
+        REGISTERED = 'Registered', 'Inscrit'
+        DELETED = 'Deleted', 'Supprimé'
+        REFUNDED = 'Refunded', 'Remboursé'
+        CANCELED = 'Canceled', 'Annulé'
+        REFUSED = 'Refused', 'Refusé'
+        CONTESTED = 'Contested', 'Contesté'
+        ABANDONED = 'Abandoned', 'Abandonné'
+        UNKNOWN = 'Unknown', 'Inconnu'
+
     item_id = models.IntegerField(primary_key=True)
     order = models.ForeignKey(EventFormOrder, on_delete=models.CASCADE)
     name = models.CharField()
     first_name = models.CharField()
     last_name = models.CharField()
+    state = models.CharField(max_length=20, choices=State.choices, default=State.UNKNOWN)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
