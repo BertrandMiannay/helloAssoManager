@@ -1,0 +1,80 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Doublons membres{% endblock %}
+
+{% block saison_content %}
+<style>
+.duplicate-group { background:white; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); padding:1.25rem; margin-bottom:1.5rem; }
+.duplicate-group h3 { margin-bottom:1rem; font-size:1rem; color:#555; }
+.member-cards { display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+.member-card { border:2px solid #e5e7eb; border-radius:6px; padding:0.75rem 1rem; flex:1; min-width:200px; cursor:pointer; }
+.member-card:has(input:checked) { border-color:#1a1a2e; background:#f0f4ff; }
+.member-card label { cursor:pointer; display:block; }
+.member-card .email { color:#6b7280; font-size:0.85em; margin:0.25rem 0; }
+.member-card .seasons { display:flex; gap:0.25rem; flex-wrap:wrap; margin-top:0.5rem; }
+.season-badge { background:#e0e7ff; color:#3730a3; padding:1px 7px; border-radius:4px; font-size:0.82em; }
+</style>
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Doublons potentiels</h1>
+    <a href="{% url 'saison-membres' %}" class="btn btn-secondary">Retour</a>
+</div>
+
+{% if groups %}
+<p style="color:#666; margin-bottom:1.5rem;">{{ groups|length }} groupe(s) de doublons détectés.</p>
+
+{% for group in groups %}
+<div class="duplicate-group">
+    <h3>{{ group.0.first_name }} {{ group.0.last_name }}</h3>
+    <form method="post" action="{% url 'saison-membres-fusionner' %}">
+        {% csrf_token %}
+        <div class="member-cards">
+            {% for member in group %}
+            <div class="member-card">
+                <label>
+                    <input type="radio" name="keep_id" value="{{ member.pk }}"
+                           {% if forloop.first %}checked{% endif %}
+                           style="margin-right:0.5rem;">
+                    <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                    <div class="email">{{ member.email }}</div>
+                    <div class="seasons">
+                        {% for order in member.membershipformorder_set.all %}
+                            {% if order.form.season %}
+                            <span class="season-badge">{{ order.form.season.label }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </label>
+                {% for other in group %}
+                    {% if other.pk != member.pk %}
+                    <input type="hidden" name="merge_ids_{{ member.pk }}" value="{{ other.pk }}">
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary"
+                onclick="syncMergeIds(this.form)">
+            Fusionner
+        </button>
+    </form>
+</div>
+{% endfor %}
+
+<script>
+function syncMergeIds(form) {
+    const keepId = form.querySelector('input[name="keep_id"]:checked').value;
+    form.querySelectorAll('input[name="merge_ids"]').forEach(el => el.remove());
+    form.querySelectorAll(`input[name="merge_ids_${keepId}"]`).forEach(function(el) {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'merge_ids';
+        hidden.value = el.value;
+        form.appendChild(hidden);
+    });
+}
+</script>
+
+{% else %}
+<p style="color:#999;">Aucun doublon détecté.</p>
+{% endif %}
+{% endblock %}

@@ -4,6 +4,11 @@
 {% block saison_content %}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">Membres</h1>
+    {% if duplicate_count %}
+    <a href="{% url 'saison-membres-doublons' %}" class="btn btn-secondary">
+        {{ duplicate_count }} doublon(s) potentiel(s)
+    </a>
+    {% endif %}
 </div>
 
 <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
@@ -24,7 +29,11 @@
 {% if members %}
 <p style="color:#666; margin-bottom:1rem;">{{ members|length }} membre(s) identifié(s)</p>
 <input type="text" id="search" placeholder="Rechercher par nom, prénom ou email…" style="width:100%; max-width:350px; margin-bottom:1.25rem;">
-<style>.sortable { cursor: pointer; }</style>
+<style>
+.sortable { cursor: pointer; }
+#member-table tbody tr:hover { background:#f0f4ff; }
+#member-table tbody tr td:first-child { color:#1a1a2e; font-weight:500; text-decoration:underline; }
+</style>
 <table id="member-table">
     <thead>
         <tr>
@@ -36,7 +45,7 @@
     </thead>
     <tbody>
         {% for member in members %}
-        <tr>
+        <tr style="cursor:pointer;" onclick="window.location='{% url 'saison-membre-detail' member.pk %}'">
             <td data-value="{{ member.first_name }}" data-label="Prénom">{{ member.first_name }}</td>
             <td data-value="{{ member.last_name }}" data-label="Nom">{{ member.last_name }}</td>
             <td data-value="{{ member.email }}" data-label="Email">{{ member.email }}</td>
