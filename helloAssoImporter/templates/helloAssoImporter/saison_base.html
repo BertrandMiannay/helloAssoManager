@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+.season-badge { display:inline-block; background:#e0e7ff; color:#3730a3; padding:1px 7px; border-radius:4px; font-size:0.82em; margin:1px; }
+</style>
 <div style="display:flex; gap:0; margin-bottom:2rem; border-bottom:2px solid #1a1a2e;">
     <a href="{% url 'saison-gestion' %}"
        style="padding:0.5rem 1.25rem; text-decoration:none; font-size:0.95rem;

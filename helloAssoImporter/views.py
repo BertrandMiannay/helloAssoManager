@@ -1,9 +1,12 @@
 import time
+from itertools import groupby as itertools_groupby
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
@@ -163,12 +166,14 @@ def member_list(request):
     members = Member.objects.prefetch_related('membershipformorder_set__form__season').order_by('last_name', 'first_name')
     if season_id:
         members = members.filter(membershipformorder__form__season_id=season_id)
+    members = list(members)
     duplicate_count = (
         Member.objects.values('first_name', 'last_name')
         .annotate(n=Count('id')).filter(n__gt=1).count()
     )
     return render(request, 'helloAssoImporter/member_list.html', {
         'members': members,
+        'members_count': len(members),
         'seasons': seasons,
         'current_season_id': season_id,
         'duplicate_count': duplicate_count,
@@ -178,19 +183,25 @@ def member_list(request):
 
 @admin_required
 def member_duplicates(request):
-    duplicate_names = (
+    duplicate_pairs = list(
         Member.objects.values('first_name', 'last_name')
         .annotate(n=Count('id')).filter(n__gt=1)
-        .order_by('last_name', 'first_name')
+        .values_list('first_name', 'last_name')
     )
     groups = []
-    for dup in duplicate_names:
-        members = list(
-            Member.objects
-            .filter(first_name=dup['first_name'], last_name=dup['last_name'])
+    if duplicate_pairs:
+        q = Q()
+        for fn, ln in duplicate_pairs:
+            q |= Q(first_name=fn, last_name=ln)
+        all_members = (
+            Member.objects.filter(q)
             .prefetch_related('membershipformorder_set__form__season')
+            .order_by('last_name', 'first_name')
         )
-        groups.append(members)
+        groups = [
+            list(group)
+            for _, group in itertools_groupby(all_members, key=lambda m: (m.last_name, m.first_name))
+        ]
     return render(request, 'helloAssoImporter/member_duplicates.html', {
         'groups': groups,
         'active_tab': 'membres',
@@ -232,26 +243,32 @@ def member_merge(request):
         return redirect('saison-membres-doublons')
 
     try:
-        keep = Member.objects.get(pk=keep_id)
-        to_merge = Member.objects.filter(pk__in=merge_ids)
-        existing_form_ids = set(
-            MemberShipFormOrder.objects.filter(member=keep).values_list('form_id', flat=True)
-        )
-        reassigned = 0
-        for source in to_merge:
-            for order in source.membershipformorder_set.all():
-                if order.form_id not in existing_form_ids:
-                    order.member = keep
-                    order.save(update_fields=['member'])
-                    existing_form_ids.add(order.form_id)
-                    reassigned += 1
-            source.delete()
+        with transaction.atomic():
+            keep = Member.objects.get(pk=keep_id)
+            to_merge = list(Member.objects.filter(pk__in=merge_ids))
+            existing_form_ids = set(
+                MemberShipFormOrder.objects.filter(member=keep).values_list('form_id', flat=True)
+            )
+            to_update = []
+            for source in to_merge:
+                for order in source.membershipformorder_set.all():
+                    if order.form_id not in existing_form_ids:
+                        order.member = keep
+                        to_update.append(order)
+                        existing_form_ids.add(order.form_id)
+            if to_update:
+                MemberShipFormOrder.objects.bulk_update(to_update, ['member'])
+            for source in to_merge:
+                source.delete()
+            reassigned = len(to_update)
         messages.success(request, f"Fusion effectuée : {keep.first_name} {keep.last_name} conservé, {reassigned} inscription(s) réassignée(s).")
     except Member.DoesNotExist:
         messages.error(request, "Membre introuvable.")
 
     next_url = request.POST.get('next')
-    return redirect(next_url if next_url else 'saison-membres-doublons')
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+        return redirect(next_url)
+    return redirect('saison-membres-doublons')
 
 
 @login_required

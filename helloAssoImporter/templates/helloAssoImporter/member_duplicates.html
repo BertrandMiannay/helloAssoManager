@@ -11,7 +11,6 @@
 .member-card label { cursor:pointer; display:block; }
 .member-card .email { color:#6b7280; font-size:0.85em; margin:0.25rem 0; }
 .member-card .seasons { display:flex; gap:0.25rem; flex-wrap:wrap; margin-top:0.5rem; }
-.season-badge { background:#e0e7ff; color:#3730a3; padding:1px 7px; border-radius:4px; font-size:0.82em; }
 </style>
 
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
@@ -25,7 +24,7 @@
 {% for group in groups %}
 <div class="duplicate-group">
     <h3>{{ group.0.first_name }} {{ group.0.last_name }}</h3>
-    <form method="post" action="{% url 'saison-membres-fusionner' %}">
+    <form method="post" action="{% url 'saison-membres-fusionner' %}" onsubmit="syncMergeIds(this)">
         {% csrf_token %}
         <div class="member-cards">
             {% for member in group %}
@@ -52,10 +51,7 @@
             </div>
             {% endfor %}
         </div>
-        <button type="submit" class="btn btn-primary"
-                onclick="syncMergeIds(this.form)">
-            Fusionner
-        </button>
+        <button type="submit" class="btn btn-primary">Fusionner</button>
     </form>
 </div>
 {% endfor %}
