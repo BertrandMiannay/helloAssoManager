@@ -21,6 +21,7 @@
 .badge-refunded    { background: #fee2e2; color: #991b1b; }
 .badge-contested   { background: #fce7f3; color: #9d174d; }
 .badge-unknown     { background: #f3f4f6; color: #9ca3af; }
+.sortable { cursor: pointer; }
 </style>
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">{{ event_form.title }}</h1>
@@ -33,22 +34,22 @@
 <table id="reg-table">
     <thead>
         <tr>
-            <th>Prénom</th>
-            <th>Nom</th>
-            <th>Catégorie</th>
-            <th>Statut</th>
-            <th>Payeur</th>
-            <th class="sortable" data-col="5" style="cursor:pointer;">Date d'inscription <span class="sort-icon">↕</span></th>
+            <th class="sortable">Prénom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Nom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Catégorie <span class="sort-icon">↕</span></th>
+            <th class="sortable">Statut <span class="sort-icon">↕</span></th>
+            <th class="sortable">Payeur <span class="sort-icon">↕</span></th>
+            <th class="sortable">Date d'inscription <span class="sort-icon">↕</span></th>
         </tr>
     </thead>
     <tbody>
         {% for reg in registrations %}
         <tr>
-            <td>{{ reg.first_name }}</td>
-            <td>{{ reg.last_name }}</td>
-            <td>{{ reg.name }}</td>
-            <td><span class="badge badge-{{ reg.state|lower }}">{{ reg.get_state_display }}</span></td>
-            <td>{{ reg.order.payer_first_name }} {{ reg.order.payer_last_name }}</td>
+            <td data-value="{{ reg.first_name }}">{{ reg.first_name }}</td>
+            <td data-value="{{ reg.last_name }}">{{ reg.last_name }}</td>
+            <td data-value="{{ reg.name }}">{{ reg.name }}</td>
+            <td data-value="{{ reg.state }}"><span class="badge badge-{{ reg.state|lower }}">{{ reg.get_state_display }}</span></td>
+            <td data-value="{{ reg.order.payer_last_name }} {{ reg.order.payer_first_name }}">{{ reg.order.payer_first_name }} {{ reg.order.payer_last_name }}</td>
             <td data-value="{{ reg.order.created_at|date:'Y-m-d' }}">{{ reg.order.created_at|date:"d/m/Y" }}</td>
         </tr>
         {% endfor %}
@@ -73,7 +74,7 @@
 
     document.querySelectorAll('#reg-table th.sortable').forEach(function (th) {
         th.addEventListener('click', function () {
-            const col = parseInt(this.dataset.col);
+            const col = this.cellIndex;
             sortState.asc = sortState.col === col ? !sortState.asc : true;
             sortState.col = col;
 
@@ -85,7 +86,11 @@
             rows.sort(function (a, b) {
                 const aVal = a.cells[col].dataset.value;
                 const bVal = b.cells[col].dataset.value;
-                return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                if (aVal === '' && bVal === '') return 0;
+                if (aVal === '') return 1;
+                if (bVal === '') return -1;
+                const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+                return sortState.asc ? cmp : -cmp;
             });
             rows.forEach(row => tbody.appendChild(row));
         });

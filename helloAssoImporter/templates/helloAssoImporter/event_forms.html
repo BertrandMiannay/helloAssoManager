@@ -3,6 +3,7 @@
 {% block title %}Sorties{% endblock %}
 
 {% block content %}
+<style>.sortable { cursor: pointer; }</style>
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">Liste des sorties</h1>
     <a href="{% url 'inscriptions-refresh' %}" class="btn btn-primary">Rafraîchir</a>
@@ -15,20 +16,20 @@
 <table id="event-table">
     <thead>
         <tr>
-            <th>Titre</th>
-            <th>Inscrits</th>
-            <th>Total</th>
-            <th class="sortable" data-col="2" style="cursor:pointer;">Date de début <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-col="3" style="cursor:pointer;">Date de fin <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-col="4" style="cursor:pointer;">Dernière mise à jour des inscriptions <span class="sort-icon">↕</span></th>
+            <th class="sortable">Titre <span class="sort-icon">↕</span></th>
+            <th class="sortable">Inscrits <span class="sort-icon">↕</span></th>
+            <th class="sortable">Total <span class="sort-icon">↕</span></th>
+            <th class="sortable">Date de début <span class="sort-icon">↕</span></th>
+            <th class="sortable">Date de fin <span class="sort-icon">↕</span></th>
+            <th class="sortable">Dernière mise à jour des inscriptions <span class="sort-icon">↕</span></th>
         </tr>
     </thead>
     <tbody>
         {% for form in event_forms %}
         <tr style="cursor:pointer;" onclick="window.location='{% url 'event-form-detail' form.form_slug %}'">
-            <td><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
-            <td>{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}</td>
-            <td>{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
+            <td data-value="{{ form.title }}"><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
+            <td data-value="{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}">{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}</td>
+            <td data-value="{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}">{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
             <td data-value="{{ form.start_date|date:'Y-m-d' }}">{{ form.start_date|date:"d/m/Y" }}</td>
             <td data-value="{{ form.end_date|date:'Y-m-d' }}">{{ form.end_date|date:"d/m/Y" }}</td>
             <td data-value="{{ form.last_registration_updated|date:'Y-m-d'|default:'' }}">{{ form.last_registration_updated|date:"d/m/Y"|default:"—" }}</td>
@@ -53,7 +54,7 @@
 
     document.querySelectorAll('#event-table th.sortable').forEach(function (th) {
         th.addEventListener('click', function () {
-            const col = parseInt(this.dataset.col);
+            const col = this.cellIndex;
             sortState.asc = sortState.col === col ? !sortState.asc : true;
             sortState.col = col;
 
@@ -65,7 +66,11 @@
             rows.sort(function (a, b) {
                 const aVal = a.cells[col].dataset.value;
                 const bVal = b.cells[col].dataset.value;
-                return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                if (aVal === '' && bVal === '') return 0;
+                if (aVal === '') return 1;
+                if (bVal === '') return -1;
+                const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+                return sortState.asc ? cmp : -cmp;
             });
             rows.forEach(row => tbody.appendChild(row));
         });
