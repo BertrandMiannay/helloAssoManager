@@ -209,7 +209,6 @@ class HelloAssoApi:
         return new_members, new_orders
 
     def get_event_form_orders(self, form: EventForm, since: datetime | None = None) -> int:
-        # Fetch outside transaction — API call can't be rolled back
         result = self._call(
             self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
             organization_slug=self.organization_slug,

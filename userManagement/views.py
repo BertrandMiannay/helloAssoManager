@@ -1,14 +1,22 @@
+import logging
 import uuid
+from datetime import timedelta
 from functools import wraps
 
 from django.contrib.auth import get_user_model, login, update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.generic import ListView, UpdateView, FormView, View, TemplateView
 from django.urls import reverse, reverse_lazy
 from django import forms
+
+logger = logging.getLogger(__name__)
+
+INVITE_EXPIRY_DAYS = 7
 
 
 def _is_club_staff(user):
@@ -16,27 +24,25 @@ def _is_club_staff(user):
     return user.is_superuser or user.groups.filter(name__in=['admin', 'instructor', 'dive_director']).exists()
 
 
-def admin_required(view_func):
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('account_login')
-        if not (request.user.is_administrator or request.user.is_superuser):
-            return redirect('home')
-        return view_func(request, *args, **kwargs)
-    return wrapper
+def _make_permission_decorator(check_fn):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return redirect('account_login')
+            if not check_fn(request.user):
+                return redirect('home')
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
-def club_staff_required(view_func):
-    """Restreint l'accès aux formateurs, directeurs de plongée et administrateurs."""
-    @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('account_login')
-        if not _is_club_staff(request.user):
-            return redirect('home')
-        return view_func(request, *args, **kwargs)
-    return wrapper
+def _is_admin(user):
+    return user.is_administrator or user.is_superuser
+
+
+admin_required = _make_permission_decorator(_is_admin)
+club_staff_required = _make_permission_decorator(_is_club_staff)
 
 User = get_user_model()
 
@@ -131,6 +137,16 @@ class UserListView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         return User.objects.prefetch_related('groups').order_by('username')
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['users_with_urls'] = [
+            (u, self.request.build_absolute_uri(
+                reverse('userManagement:accept_invite', args=[u.invite_token])
+            ) if u.invite_token else None)
+            for u in ctx['users']
+        ]
+        return ctx
+
 
 class UserRoleUpdateView(AdminRequiredMixin, FormView):
     template_name = 'userManagement/user_role_form.html'
@@ -147,9 +163,12 @@ class UserRoleUpdateView(AdminRequiredMixin, FormView):
 
     def form_valid(self, form):
         user = self.get_target_user()
-        user.groups.clear()
-        group = Group.objects.get(name=form.cleaned_data['role'])
-        user.groups.add(group)
+        old_groups = list(user.groups.values_list('name', flat=True))
+        new_role = form.cleaned_data['role']
+        group = Group.objects.get(name=new_role)
+        user.groups.set([group])
+        logger.info("ROLE_CHANGE user=%s old=%s new=%s by=%s",
+                    user.username, old_groups, new_role, self.request.user.username)
         return super().form_valid(form)
 
 
@@ -173,8 +192,10 @@ class InviteView(AdminRequiredMixin, FormView):
             email=email,
             is_active=False,
             invite_token=token,
-            invite_url=invite_url,
+            invite_expires_at=timezone.now() + timedelta(days=INVITE_EXPIRY_DAYS),
         )
+        logger.info("INVITE_SENT to=%s by=%s expires_in=%dd",
+                    email, self.request.user.username, INVITE_EXPIRY_DAYS)
         return self.render_to_response(self.get_context_data(
             form=InvitationForm(),
             invitation_url=invite_url,
@@ -186,7 +207,10 @@ class AcceptInviteView(View):
     template_name = 'userManagement/accept_invite.html'
 
     def get_pending_user(self, token):
-        return get_object_or_404(User, invite_token=token, is_active=False)
+        user = get_object_or_404(User, invite_token=token, is_active=False)
+        if user.invite_expires_at and user.invite_expires_at < timezone.now():
+            raise Http404
+        return user
 
     def get(self, request, token):
         user = self.get_pending_user(token)
@@ -201,8 +225,9 @@ class AcceptInviteView(View):
             user.set_password(form.cleaned_data['password1'])
             user.is_active = True
             user.invite_token = None
-            user.invite_url = None
+            user.invite_expires_at = None
             user.save()
+            logger.info("INVITE_ACCEPTED user=%s email=%s", user.username, user.email)
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('/')
         return render(request, self.template_name, {'form': form, 'email': user.email})
@@ -213,6 +238,8 @@ class UserDeleteView(AdminRequiredMixin, View):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
         if user != request.user:
+            logger.info("USER_DELETE user=%s email=%s by=%s",
+                        user.username, user.email, request.user.username)
             user.delete()
         return redirect('userManagement:user_list')
 

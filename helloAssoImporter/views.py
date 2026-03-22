@@ -1,6 +1,9 @@
+import logging
 import time
 from itertools import groupby as itertools_groupby
 from django import forms
+
+logger = logging.getLogger(__name__)
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -104,7 +107,10 @@ def set_current_season(request, pk):
 @admin_required
 def delete_season(request, pk):
     if request.method == 'POST':
-        Season.objects.filter(pk=pk).delete()
+        season = Season.objects.filter(pk=pk).first()
+        if season:
+            logger.info("SEASON_DELETE pk=%s label=%s by=%s", pk, season.label, request.user.username)
+            season.delete()
     return redirect('saison-gestion')
 
 
@@ -262,6 +268,9 @@ def member_merge(request):
             for source in to_merge:
                 source.delete()
             reassigned = len(to_update)
+        logger.info("MEMBER_MERGE keep=pk:%s (%s %s) absorbed=%s reassigned=%d by=%s",
+                    keep.pk, keep.first_name, keep.last_name,
+                    [m.pk for m in to_merge], reassigned, request.user.username)
         messages.success(request, f"Fusion effectuée : {keep.first_name} {keep.last_name} conservé, {reassigned} inscription(s) réassignée(s).")
     except Member.DoesNotExist:
         messages.error(request, "Membre introuvable.")
