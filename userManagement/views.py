@@ -11,12 +11,29 @@ from django.urls import reverse, reverse_lazy
 from django import forms
 
 
+def _is_club_staff(user):
+    """Formateurs, directeurs de plongée et administrateurs."""
+    return user.is_superuser or user.groups.filter(name__in=['admin', 'instructor', 'dive_director']).exists()
+
+
 def admin_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('account_login')
         if not (request.user.is_administrator or request.user.is_superuser):
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def club_staff_required(view_func):
+    """Restreint l'accès aux formateurs, directeurs de plongée et administrateurs."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('account_login')
+        if not _is_club_staff(request.user):
             return redirect('home')
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -60,6 +77,13 @@ class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def test_func(self):
         return self.request.user.is_administrator or self.request.user.is_superuser
+
+
+class ClubStaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Allow access to instructors, dive directors and admins."""
+
+    def test_func(self):
+        return _is_club_staff(self.request.user)
 
 
 class UserRoleForm(forms.Form):

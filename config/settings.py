@@ -24,10 +24,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-g-3i-(+qbn%qww**m)c%7m7^!udb%6xk*ame(=48od26zt_28t')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    if DEBUG:
+        _secret_key = 'django-insecure-dev-only-not-for-production'
+    else:
+        raise RuntimeError("La variable d'environnement SECRET_KEY est obligatoire en production.")
+SECRET_KEY = _secret_key
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
@@ -152,6 +157,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Cookie security
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Authentication
 AUTHENTICATION_BACKENDS = [

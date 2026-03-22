@@ -3,6 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from django.db import transaction
 from django.utils import timezone
 import helloasso_python
 from helloasso_python.api.formulaires_api import FormulairesApi
@@ -134,10 +135,9 @@ class HelloAssoApi:
         """Fetch and save members for a membership form.
         Returns (new_members_count, new_orders_count).
         """
-        new_members = 0
-        new_orders = 0
+        # Fetch all pages first (outside transaction — API calls can't be rolled back)
+        pages = []
         continuation_token = None
-
         while True:
             result = self._call(
                 self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
@@ -148,62 +148,68 @@ class HelloAssoApi:
                 with_details=True,
                 continuation_token=continuation_token,
             )
-            for order in result.data or []:
-                for item in order.items or []:
-                    custom = {f.name: f.answer for f in (item.custom_fields or [])}
-
-                    email = (custom.get(FIELD_EMAIL) or '').strip().lower()
-                    first_name = normalize_name(item.user.first_name if item.user else '')
-                    last_name = normalize_name(item.user.last_name if item.user else '')
-
-                    if not email:
-                        logger.warning("Item %s skipped: no email", item.id)
-                        continue
-
-                    member, member_created = Member.objects.get_or_create(
-                        email=email,
-                        first_name=first_name,
-                        last_name=last_name,
-                    )
-                    if member_created:
-                        new_members += 1
-
-                    birthdate_str = custom.get(FIELD_BIRTHDATE)
-                    birthdate = None
-                    if birthdate_str:
-                        try:
-                            birthdate = datetime.strptime(birthdate_str, "%d/%m/%Y").date()
-                        except ValueError:
-                            logger.warning("Invalid birthdate '%s' for item %s", birthdate_str, item.id)
-
-                    _, order_created = MemberShipFormOrder.objects.update_or_create(
-                        item_id=item.id,
-                        defaults={
-                            'order_id': order.id,
-                            'form': form,
-                            'member': member,
-                            'payer_email': order.payer.email if order.payer else '',
-                            'payer_first_name': order.payer.first_name if order.payer else '',
-                            'payer_last_name': order.payer.last_name if order.payer else '',
-                            'category': item.name,
-                            'birthdate': birthdate,
-                            'licence_number': custom.get(FIELD_LICENCE, ''),
-                            'sex': custom.get(FIELD_SEX),
-                            'updated_at': order.meta.updated_at if order.meta else None,
-                            'created_at': order.meta.created_at if order.meta else None,
-                        }
-                    )
-                    if order_created:
-                        new_orders += 1
-
+            pages.append(result.data or [])
             next_token = result.pagination.continuation_token if result.pagination else None
             if not next_token or next_token == continuation_token or not result.data:
                 break
             continuation_token = next_token
 
+        new_members = 0
+        new_orders = 0
+        with transaction.atomic():
+            for page in pages:
+                for order in page:
+                    for item in order.items or []:
+                        custom = {f.name: f.answer for f in (item.custom_fields or [])}
+
+                        email = (custom.get(FIELD_EMAIL) or '').strip().lower()
+                        first_name = normalize_name(item.user.first_name if item.user else '')
+                        last_name = normalize_name(item.user.last_name if item.user else '')
+
+                        if not email:
+                            logger.warning("Item %s skipped: no email", item.id)
+                            continue
+
+                        member, member_created = Member.objects.get_or_create(
+                            email=email,
+                            first_name=first_name,
+                            last_name=last_name,
+                        )
+                        if member_created:
+                            new_members += 1
+
+                        birthdate_str = custom.get(FIELD_BIRTHDATE)
+                        birthdate = None
+                        if birthdate_str:
+                            try:
+                                birthdate = datetime.strptime(birthdate_str, "%d/%m/%Y").date()
+                            except ValueError:
+                                logger.warning("Invalid birthdate '%s' for item %s", birthdate_str, item.id)
+
+                        _, order_created = MemberShipFormOrder.objects.update_or_create(
+                            item_id=item.id,
+                            defaults={
+                                'order_id': order.id,
+                                'form': form,
+                                'member': member,
+                                'payer_email': order.payer.email if order.payer else '',
+                                'payer_first_name': order.payer.first_name if order.payer else '',
+                                'payer_last_name': order.payer.last_name if order.payer else '',
+                                'category': item.name,
+                                'birthdate': birthdate,
+                                'licence_number': custom.get(FIELD_LICENCE, ''),
+                                'sex': custom.get(FIELD_SEX),
+                                'updated_at': order.meta.updated_at if order.meta else None,
+                                'created_at': order.meta.created_at if order.meta else None,
+                            }
+                        )
+                        if order_created:
+                            new_orders += 1
+
         return new_members, new_orders
 
     def get_event_form_orders(self, form: EventForm, since: datetime | None = None) -> int:
+        # Fetch outside transaction — API call can't be rolled back
         result = self._call(
             self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
             organization_slug=self.organization_slug,
@@ -213,33 +219,34 @@ class HelloAssoApi:
             page_size=100,
         )
         new_registrations = 0
-        for i in result.data or []:
-            order, _ = EventFormOrder.objects.get_or_create(
-                order_id=i.id,
-                defaults={
-                    "form": form,
-                    "payer_email": i.payer.email if i.payer else None,
-                    "payer_first_name": i.payer.first_name if i.payer else None,
-                    "payer_last_name": i.payer.last_name if i.payer else None,
-                    "created_at": i.meta.created_at if i.meta else None,
-                    "updated_at": i.meta.updated_at if i.meta else None,
-                }
-            )
-            for item in i.items or []:
-                _, created = EventRegistration.objects.update_or_create(
-                    item_id=item.id,
+        with transaction.atomic():
+            for i in result.data or []:
+                order, _ = EventFormOrder.objects.get_or_create(
+                    order_id=i.id,
                     defaults={
-                        "order": order,
-                        "name": item.name,
-                        "first_name": item.user.first_name if item.user else None,
-                        "last_name": item.user.last_name if item.user else None,
-                        "state": item.state if item.state else EventRegistration.State.UNKNOWN,
+                        "form": form,
+                        "payer_email": i.payer.email if i.payer else None,
+                        "payer_first_name": i.payer.first_name if i.payer else None,
+                        "payer_last_name": i.payer.last_name if i.payer else None,
+                        "created_at": i.meta.created_at if i.meta else None,
+                        "updated_at": i.meta.updated_at if i.meta else None,
                     }
                 )
-                if created:
-                    new_registrations += 1
-        form.last_registration_updated = timezone.now()
-        form.save(update_fields=["last_registration_updated"])
+                for item in i.items or []:
+                    _, created = EventRegistration.objects.update_or_create(
+                        item_id=item.id,
+                        defaults={
+                            "order": order,
+                            "name": item.name,
+                            "first_name": item.user.first_name if item.user else None,
+                            "last_name": item.user.last_name if item.user else None,
+                            "state": item.state if item.state else EventRegistration.State.UNKNOWN,
+                        }
+                    )
+                    if created:
+                        new_registrations += 1
+            form.last_registration_updated = timezone.now()
+            form.save(update_fields=["last_registration_updated"])
         return new_registrations
 
     def create_event_form(self, data: dict) -> None:

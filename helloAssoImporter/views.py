@@ -12,7 +12,8 @@ from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count, Q
-from userManagement.views import AdminRequiredMixin, admin_required
+from django.core.cache import cache
+from userManagement.views import AdminRequiredMixin, admin_required, ClubStaffRequiredMixin, club_staff_required
 
 
 class EventFormCreateForm(forms.Form):
@@ -42,7 +43,7 @@ class MemberShipFormOrderListView(LoginRequiredMixin, ListView):
     template_name = 'forms.html'
 
 
-class EventFormListView(LoginRequiredMixin, ListView):
+class EventFormListView(ClubStaffRequiredMixin, ListView):
     model = EventForm
     template_name = 'helloAssoImporter/event_forms.html'
     context_object_name = 'event_forms'
@@ -57,7 +58,7 @@ class EventFormListView(LoginRequiredMixin, ListView):
         )
 
 
-class EventFormDetailView(LoginRequiredMixin, DetailView):
+class EventFormDetailView(ClubStaffRequiredMixin, DetailView):
     model = EventForm
     template_name = 'helloAssoImporter/event_form_detail.html'
     context_object_name = 'event_form'
@@ -266,12 +267,12 @@ def member_merge(request):
         messages.error(request, "Membre introuvable.")
 
     next_url = request.POST.get('next')
-    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return redirect(next_url)
     return redirect('saison-membres-doublons')
 
 
-@login_required
+@club_staff_required
 def create_event_form(request):
     if request.method == 'POST':
         form = EventFormCreateForm(request.POST)
@@ -289,13 +290,22 @@ def create_event_form(request):
     return render(request, 'helloAssoImporter/event_form_create.html', {'form': form})
 
 
-@login_required
+_REFRESH_COOLDOWN_KEY = 'event_refresh_cooldown'
+_REFRESH_COOLDOWN_SECONDS = 60
+
+
+@club_staff_required
 def refresh_event_forms(request):
+    if cache.get(_REFRESH_COOLDOWN_KEY):
+        messages.warning(request, "Rafraîchissement déjà effectué récemment. Veuillez patienter 1 minute.")
+        return redirect('inscriptions')
+    cache.set(_REFRESH_COOLDOWN_KEY, True, _REFRESH_COOLDOWN_SECONDS)
     api = get_hello_asso_api()
     start = time.time()
     try:
         forms_added = api.refresh_event_forms()
     except HelloAssoApiError as e:
+        cache.delete(_REFRESH_COOLDOWN_KEY)
         notify_api_error(request, e)
         return redirect('inscriptions')
     registrations_added = 0
