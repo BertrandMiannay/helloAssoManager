@@ -1,0 +1,90 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Membres{% endblock %}
+
+{% block saison_content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+    <h1 style="margin-bottom:0;">Membres</h1>
+</div>
+
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+    <a href="{% url 'saison-membres' %}"
+       style="padding:0.3rem 0.9rem; border-radius:4px; text-decoration:none; font-size:0.9rem;
+              {% if not current_season_id %}background:#1a1a2e; color:white;{% else %}background:#e5e7eb; color:#374151;{% endif %}">
+        Toutes
+    </a>
+    {% for season in seasons %}
+    <a href="{% url 'saison-membres' %}?season={{ season.pk }}"
+       style="padding:0.3rem 0.9rem; border-radius:4px; text-decoration:none; font-size:0.9rem;
+              {% if current_season_id == season.pk|stringformat:'s' %}background:#1a1a2e; color:white;{% else %}background:#e5e7eb; color:#374151;{% endif %}">
+        {{ season.label }}
+    </a>
+    {% endfor %}
+</div>
+
+{% if members %}
+<p style="color:#666; margin-bottom:1rem;">{{ members|length }} membre(s) identifié(s)</p>
+<input type="text" id="search" placeholder="Rechercher par nom, prénom ou email…" style="width:100%; max-width:350px; margin-bottom:1.25rem;">
+<style>.sortable { cursor: pointer; }</style>
+<table id="member-table">
+    <thead>
+        <tr>
+            <th class="sortable">Prénom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Nom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Email <span class="sort-icon">↕</span></th>
+            <th>Saisons</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td data-value="{{ member.first_name }}" data-label="Prénom">{{ member.first_name }}</td>
+            <td data-value="{{ member.last_name }}" data-label="Nom">{{ member.last_name }}</td>
+            <td data-value="{{ member.email }}" data-label="Email">{{ member.email }}</td>
+            <td data-label="Saisons">
+                {% for order in member.membershipformorder_set.all %}
+                    {% if order.form.season %}<span style="display:inline-block; background:#e0e7ff; color:#3730a3; padding:1px 7px; border-radius:4px; font-size:0.82em; margin:1px;">{{ order.form.season.label }}</span>{% endif %}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('search').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('#member-table tbody tr').forEach(function (row) {
+            const text = row.cells[0].textContent.toLowerCase()
+                       + row.cells[1].textContent.toLowerCase()
+                       + row.cells[2].textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    let sortState = { col: null, asc: true };
+
+    document.querySelectorAll('#member-table th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            const col = this.cellIndex;
+            sortState.asc = sortState.col === col ? !sortState.asc : true;
+            sortState.col = col;
+
+            document.querySelectorAll('#member-table th.sortable .sort-icon').forEach(el => el.textContent = '↕');
+            this.querySelector('.sort-icon').textContent = sortState.asc ? '↑' : '↓';
+
+            const tbody = document.querySelector('#member-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                const aVal = a.cells[col].dataset.value;
+                const bVal = b.cells[col].dataset.value;
+                const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+                return sortState.asc ? cmp : -cmp;
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+</script>
+{% else %}
+<p style="color:#999;">Aucun membre importé. Rafraîchissez un formulaire d'inscription pour importer les membres ou associer le formulaire à une saison.</p>
+{% endif %}
+{% endblock %}

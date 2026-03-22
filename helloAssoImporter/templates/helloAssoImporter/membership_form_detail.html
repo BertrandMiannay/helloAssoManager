@@ -12,37 +12,39 @@
     <button type="submit" class="btn btn-primary">Rafraîchir les inscrits</button>
 </form>
 
-{% if members is not None %}
-    {% if members %}
-    <p style="color:#666; margin-bottom:1rem;">{{ members|length }} inscrit(s)</p>
-    <table>
-        <thead>
-            <tr>
-                <th>Prénom</th>
-                <th>Nom</th>
-                <th>Catégorie</th>
-                <th>Email</th>
-                <th>Date de naissance</th>
-                <th>Sexe</th>
-                <th>N° licence</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for member in members %}
-            <tr>
-                <td>{{ member.first_name|default:"—" }}</td>
-                <td>{{ member.last_name|default:"—" }}</td>
-                <td>{{ member.category|default:"—" }}</td>
-                <td>{{ member.email|default:"—" }}</td>
-                <td>{{ member.birthdate|default:"—" }}</td>
-                <td>{{ member.sex|default:"—" }}</td>
-                <td>{{ member.licence_number|default:"—" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="color:#999;">Aucun inscrit trouvé pour ce formulaire.</p>
-    {% endif %}
+{% if orders %}
+<p style="color:#666; margin-bottom:1rem;">{{ orders|length }} inscrit(s)</p>
+<div style="overflow-x:auto;">
+<table>
+    <thead>
+        <tr>
+            <th>Prénom</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Catégorie</th>
+            <th>Date de naissance</th>
+            <th>Sexe</th>
+            <th>N° licence</th>
+            <th>Email payeur</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.member.first_name|default:"—" }}</td>
+            <td>{{ order.member.last_name|default:"—" }}</td>
+            <td>{{ order.member.email|default:"—" }}</td>
+            <td>{{ order.category|default:"—" }}</td>
+            <td>{{ order.birthdate|default:"—" }}</td>
+            <td>{{ order.sex|default:"—" }}</td>
+            <td>{{ order.licence_number|default:"—" }}</td>
+            <td>{{ order.payer_email|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p style="color:#999;">Aucun inscrit importé pour ce formulaire.</p>
 {% endif %}
 {% endblock %}

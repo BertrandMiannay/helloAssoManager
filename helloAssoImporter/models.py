@@ -81,24 +81,38 @@ class EventRegistration(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
+class Member(models.Model):
+    email = models.CharField()
+    first_name = models.CharField()
+    last_name = models.CharField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['email', 'first_name', 'last_name'],
+                name='unique_member_identity',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} <{self.email}>"
+
+
 class MemberShipFormOrder(models.Model):
-    order_id = models.IntegerField(primary_key=True)
+    item_id = models.IntegerField(primary_key=True)
+    order_id = models.IntegerField(db_index=True)
     form = models.ForeignKey(MemberShipForm, on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, null=True, blank=True, on_delete=models.SET_NULL)
     payer_email = models.CharField()
     payer_first_name = models.CharField()
     payer_last_name = models.CharField()
+    category = models.CharField(null=True, blank=True)
+    birthdate = models.DateField(null=True, blank=True)
+    licence_number = models.CharField(blank=True, default='')
+    sex = models.CharField(null=True, blank=True)
+    caci_expiration = models.DateField(null=True, blank=True)
     updated_at = models.DateTimeField()
     created_at = models.DateTimeField()
 
-
-class Member(models.Model):
-    member_id = models.IntegerField(primary_key=True)
-    order = models.ForeignKey(MemberShipFormOrder, on_delete=models.CASCADE)
-    category = models.CharField()
-    first_name = models.CharField()
-    last_name = models.CharField()
-    birhdate = models.DateField()
-    email = models.CharField()
-    licence_number = models.CharField(blank=True, default='')
-    sex = models.CharField()
-    caci_expiration = models.DateField(null=True)
+    def __str__(self):
+        return str(self.item_id)

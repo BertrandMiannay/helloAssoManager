@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 
-from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError
-from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, EventForm, EventRegistration
+from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE
+from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count, Q
 from userManagement.views import AdminRequiredMixin, admin_required
@@ -130,16 +130,17 @@ def assign_season(request):
 @admin_required
 def membership_form_detail(request, form_slug):
     membership_form = get_object_or_404(MemberShipForm, pk=form_slug)
-    members = None
     if request.method == 'POST':
         api = get_hello_asso_api()
         try:
-            members = api.fetch_membership_form_members(membership_form)
+            new_members, new_orders = api.save_membership_form_members(membership_form)
+            messages.success(request, f"Import terminé : {new_members} nouveau(x) membre(s), {new_orders} inscription(s) créée(s).")
         except HelloAssoApiError as e:
             notify_api_error(request, e)
+    orders = MemberShipFormOrder.objects.filter(form=membership_form).select_related('member').order_by('member__last_name', 'member__first_name')
     return render(request, 'helloAssoImporter/membership_form_detail.html', {
         'membership_form': membership_form,
-        'members': members,
+        'orders': orders,
         'active_tab': 'formulaires',
     })
 
@@ -153,6 +154,21 @@ def refresh_membership_forms(request):
     except HelloAssoApiError as e:
         notify_api_error(request, e)
     return redirect('saison-formulaires')
+
+
+@admin_required
+def member_list(request):
+    seasons = Season.objects.order_by('-current', 'label')
+    season_id = request.GET.get('season')
+    members = Member.objects.prefetch_related('membershipformorder_set__form__season').order_by('last_name', 'first_name')
+    if season_id:
+        members = members.filter(membershipformorder__form__season_id=season_id)
+    return render(request, 'helloAssoImporter/member_list.html', {
+        'members': members,
+        'seasons': seasons,
+        'current_season_id': season_id,
+        'active_tab': 'membres',
+    })
 
 
 @login_required
