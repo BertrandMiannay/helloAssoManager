@@ -11,7 +11,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE
+from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count, Q
@@ -137,20 +137,46 @@ def assign_season(request):
     return redirect('saison-formulaires')
 
 
+
 @admin_required
 def membership_form_detail(request, form_slug):
     membership_form = get_object_or_404(MemberShipForm, pk=form_slug)
     if request.method == 'POST':
-        api = get_hello_asso_api()
-        try:
-            new_members, new_orders = api.save_membership_form_members(membership_form)
-            messages.success(request, f"Import terminé : {new_members} nouveau(x) membre(s), {new_orders} inscription(s) créée(s).")
-        except HelloAssoApiError as e:
-            notify_api_error(request, e)
+        action = request.POST.get('action')
+        if action == 'save_mapping':
+            mapping = {
+                field: request.POST.get(field, '').strip()
+                for field in LEVEL_FIELD_LABELS
+                if request.POST.get(field, '').strip()
+            }
+            membership_form.field_mapping = mapping
+            membership_form.save(update_fields=['field_mapping'])
+            messages.success(request, "Mapping des champs enregistré.")
+        else:
+            api = get_hello_asso_api()
+            try:
+                new_members, new_orders = api.save_membership_form_members(membership_form)
+                messages.success(request, f"Import terminé : {new_members} nouveau(x) membre(s), {new_orders} inscription(s) créée(s).")
+            except HelloAssoApiError as e:
+                notify_api_error(request, e)
     orders = MemberShipFormOrder.objects.filter(form=membership_form).select_related('member').order_by('member__last_name', 'member__first_name')
+    level_mapping_rows = [
+        (field, label, membership_form.field_mapping.get(field, ''))
+        for field, label in LEVEL_FIELD_LABELS.items()
+    ]
+    cache_key = f'membership_form_fields_{membership_form.form_slug}'
+    available_fields = cache.get(cache_key)
+    if available_fields is None:
+        try:
+            available_fields = get_hello_asso_api().get_available_custom_fields(membership_form)
+            cache.set(cache_key, available_fields, 300)
+        except HelloAssoApiError:
+            available_fields = []
     return render(request, 'helloAssoImporter/membership_form_detail.html', {
         'membership_form': membership_form,
         'orders': orders,
+        'level_mapping_rows': level_mapping_rows,
+        'available_fields': available_fields,
         'active_tab': 'formulaires',
     })
 
@@ -218,6 +244,24 @@ def member_duplicates(request):
 @admin_required
 def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
+
+    email_error = None
+    if request.method == 'POST':
+        new_email = request.POST.get('email', '').strip().lower()
+        if not new_email:
+            email_error = "L'adresse email ne peut pas être vide."
+        elif Member.objects.filter(
+            email=new_email, first_name=member.first_name, last_name=member.last_name
+        ).exclude(pk=pk).exists():
+            email_error = "Un membre avec ce nom et cet email existe déjà."
+        else:
+            old_email = member.email
+            member.email = new_email
+            member.save(update_fields=['email'])
+            logger.info("MEMBER_EMAIL_CHANGE pk=%s old=%s new=%s by=%s",
+                        member.pk, old_email, new_email, request.user.username)
+            return redirect('saison-membre-detail', pk=pk)
+
     orders = MemberShipFormOrder.objects.filter(member=member).select_related('form__season').order_by('form__start_date')
     query = request.GET.get('q', '').strip()
     candidates = []
@@ -233,6 +277,7 @@ def member_detail(request, pk):
         'orders': orders,
         'query': query,
         'candidates': candidates,
+        'email_error': email_error,
         'active_tab': 'membres',
     })
 

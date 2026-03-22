@@ -14,18 +14,45 @@
 </div>
 
 <div class="member-card">
-    <p><strong>Email :</strong> {{ member.email }}</p>
+    <form method="post" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+        {% csrf_token %}
+        <label for="member-email" style="white-space:nowrap;"><strong>Email :</strong></label>
+        <input type="email" id="member-email" name="email" value="{{ member.email }}"
+               style="flex:1; max-width:320px; padding:0.3rem 0.6rem; border:1px solid {% if email_error %}#dc3545{% else %}#ccc{% endif %}; border-radius:4px; font-size:0.95rem;">
+        <button type="submit" class="btn btn-secondary" style="white-space:nowrap;">Enregistrer</button>
+    </form>
+    {% if email_error %}<p style="color:#dc3545; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:0.5rem;">{{ email_error }}</p>{% endif %}
     <p style="margin-top:0.75rem;"><strong>Inscriptions :</strong></p>
     {% if orders %}
-    <ul style="margin:0.5rem 0 0 1rem;">
+    <table style="width:100%; border-collapse:collapse; margin-top:0.5rem; font-size:0.9rem;">
+        <thead>
+            <tr style="border-bottom:2px solid #e5e7eb; text-align:left; color:#6b7280;">
+                <th style="padding:0.4rem 0.75rem 0.4rem 0;">Formulaire</th>
+                <th style="padding:0.4rem 0.75rem;">Plongée</th>
+                <th style="padding:0.4rem 0.75rem;">Encadrement</th>
+                <th style="padding:0.4rem 0.75rem;">Apnée</th>
+                <th style="padding:0.4rem 0.75rem;">Enc. apnée</th>
+                <th style="padding:0.4rem 0.75rem;">Tir sous-marin</th>
+                <th style="padding:0.4rem 0;">Enc. TSM</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for order in orders %}
-        <li>
-            {{ order.form.title }}
-            {% if order.form.season %}<span class="season-badge">{{ order.form.season.label }}</span>{% endif %}
-            {% if order.category %}<span style="color:#6b7280; font-size:0.9em;">— {{ order.category }}</span>{% endif %}
-        </li>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:0.4rem 0.75rem 0.4rem 0;">
+                {{ order.form.title }}
+                {% if order.form.season %}<span class="season-badge">{{ order.form.season.label }}</span>{% endif %}
+            </td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.dive_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.dive_teaching_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.apnea_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.apnea_teaching_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.underwater_shooting_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0;">{{ order.underwater_shooting_teaching_level|default:"—" }}</td>
+        </tr>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
     {% else %}
     <p style="color:#999;">Aucune inscription.</p>
     {% endif %}

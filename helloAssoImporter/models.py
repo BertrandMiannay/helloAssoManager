@@ -23,6 +23,11 @@ class MemberShipForm(models.Model):
     updated_at = models.DateTimeField()
     created_at = models.DateTimeField()
     season = models.OneToOneField(Season, null=True, blank=True, on_delete=models.SET_NULL)
+    field_mapping = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Associe les champs standardisés (définis dans helloAssoApi.LEVEL_FIELD_LABELS) aux noms de champs HelloAsso de ce formulaire.",
+    )
 
     def __str__(self):
         return self.form_slug
@@ -111,6 +116,12 @@ class MemberShipFormOrder(models.Model):
     licence_number = models.CharField(blank=True, default='')
     sex = models.CharField(null=True, blank=True)
     caci_expiration = models.DateField(null=True, blank=True)
+    dive_level = models.CharField(blank=True, default='')
+    dive_teaching_level = models.CharField(blank=True, default='')
+    apnea_level = models.CharField(blank=True, default='')
+    apnea_teaching_level = models.CharField(blank=True, default='')
+    underwater_shooting_level = models.CharField(blank=True, default='')
+    underwater_shooting_teaching_level = models.CharField(blank=True, default='')
     updated_at = models.DateTimeField()
     created_at = models.DateTimeField()
 

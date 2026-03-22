@@ -17,11 +17,23 @@ logger = logging.getLogger(__name__)
 
 TOKEN_URL = "https://api.helloasso.com/oauth2/token"
 
-# HelloAsso custom field names for membership forms
+# HelloAsso custom field names for membership forms (used as fallbacks / defaults)
 FIELD_EMAIL = "Adresse Mail"
 FIELD_BIRTHDATE = "Date de naissance"
 FIELD_SEX = "Sexe"
 FIELD_LICENCE = "Numéro de licence"
+
+# Standardized level fields: maps model field name → French label
+# Used by the import logic and the field-mapping UI.
+LEVEL_FIELD_LABELS = {
+    'dive_level': 'Niveau plongée',
+    'dive_teaching_level': 'Encadrement plongée',
+    'apnea_level': 'Niveau apnée',
+    'apnea_teaching_level': 'Encadrement apnée',
+    'underwater_shooting_level': 'Niveau tir sous-marin',
+    'underwater_shooting_teaching_level': 'Encadrement tir sous-marin',
+}
+LEVEL_FIELDS = tuple(LEVEL_FIELD_LABELS)
 
 
 def normalize_name(value: str) -> str:
@@ -186,6 +198,10 @@ class HelloAssoApi:
                             except ValueError:
                                 logger.warning("Invalid birthdate '%s' for item %s", birthdate_str, item.id)
 
+                        level_values = {
+                            field: custom.get(form.field_mapping.get(field, ''), '')
+                            for field in LEVEL_FIELDS
+                        }
                         _, order_created = MemberShipFormOrder.objects.update_or_create(
                             item_id=item.id,
                             defaults={
@@ -199,6 +215,7 @@ class HelloAssoApi:
                                 'birthdate': birthdate,
                                 'licence_number': custom.get(FIELD_LICENCE, ''),
                                 'sex': custom.get(FIELD_SEX),
+                                **level_values,
                                 'updated_at': order.meta.updated_at if order.meta else None,
                                 'created_at': order.meta.created_at if order.meta else None,
                             }
@@ -306,6 +323,23 @@ class HelloAssoApi:
                 break
             continuation_token = next_token
         return members
+
+    def get_available_custom_fields(self, form: MemberShipForm, page_size: int = 20) -> list[str]:
+        """Return the unique custom field names found across the first page of orders."""
+        result = self._call(
+            self._commandes.organizations_organization_slug_forms_form_type_form_slug_orders_get,
+            organization_slug=self.organization_slug,
+            form_slug=form.form_slug,
+            form_type=form.form_type,
+            page_size=page_size,
+            with_details=True,
+        )
+        seen: set[str] = set()
+        for order in result.data or []:
+            for item in order.items or []:
+                for f in item.custom_fields or []:
+                    seen.add(f.name)
+        return list(seen)
 
 
 _hello_asso_api_instance: HelloAssoApi | None = None

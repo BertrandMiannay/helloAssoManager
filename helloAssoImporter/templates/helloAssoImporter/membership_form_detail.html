@@ -7,6 +7,41 @@
     <h1 style="margin-bottom:0;">{{ membership_form.title }}</h1>
 </div>
 
+<div class="member-card" style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem; margin-bottom:1rem;">Mapping des champs HelloAsso</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_mapping">
+        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+            <thead>
+                <tr style="border-bottom:2px solid #e5e7eb; text-align:left; color:#6b7280;">
+                    <th style="padding:0.4rem 1rem 0.4rem 0; width:220px;">Champ standardisé</th>
+                    <th style="padding:0.4rem 0;">Champ HelloAsso</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for field, label, current_value in level_mapping_rows %}
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:0.5rem 1rem 0.5rem 0; color:#374151;">{{ label }}</td>
+                <td style="padding:0.4rem 0;">
+                    <input type="text" name="{{ field }}" value="{{ current_value }}"
+                           list="fields-{{ forloop.counter }}" autocomplete="off"
+                           placeholder="Rechercher un champ…"
+                           style="width:100%; max-width:380px; padding:0.3rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+                    <datalist id="fields-{{ forloop.counter }}">
+                        {% for name in available_fields %}
+                        <option value="{{ name }}">
+                        {% endfor %}
+                    </datalist>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-secondary" style="margin-top:1rem;">Enregistrer le mapping</button>
+    </form>
+</div>
+
 <form method="post" style="margin-bottom:2rem;">
     {% csrf_token %}
     <button type="submit" class="btn btn-primary">Rafraîchir les inscrits</button>
