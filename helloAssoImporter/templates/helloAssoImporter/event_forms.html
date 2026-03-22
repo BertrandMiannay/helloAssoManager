@@ -10,7 +10,7 @@
     <a href="{% url 'event-form-create' %}" class="btn btn-secondary">+ Créer une sortie</a>
 </div>
 
-<input type="text" id="search" placeholder="Rechercher par titre…" style="width:300px; margin-bottom:1.25rem;">
+<input type="text" id="search" placeholder="Rechercher par titre…" style="width:100%; max-width:300px; margin-bottom:1.25rem;">
 
 {% if event_forms %}
 <table id="event-table">
@@ -27,12 +27,12 @@
     <tbody>
         {% for form in event_forms %}
         <tr style="cursor:pointer;" onclick="window.location='{% url 'event-form-detail' form.form_slug %}'">
-            <td data-value="{{ form.title }}"><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
-            <td data-value="{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}">{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}</td>
-            <td data-value="{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}">{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
-            <td data-value="{{ form.start_date|date:'Y-m-d' }}">{{ form.start_date|date:"d/m/Y" }}</td>
-            <td data-value="{{ form.end_date|date:'Y-m-d' }}">{{ form.end_date|date:"d/m/Y" }}</td>
-            <td data-value="{{ form.last_registration_updated|date:'Y-m-d'|default:'' }}">{{ form.last_registration_updated|date:"d/m/Y"|default:"—" }}</td>
+            <td data-value="{{ form.title }}" data-label="Titre"><a href="{% url 'event-form-detail' form.form_slug %}" style="color:#1a1a2e; font-weight:500; text-decoration:underline;">{{ form.title }}</a></td>
+            <td data-value="{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}" data-label="Inscrits">{% if form.last_registration_updated %}{{ form.confirmed_count }}{% endif %}</td>
+            <td data-value="{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}" data-label="Total">{% if form.last_registration_updated %}{{ form.registration_count }}{% endif %}</td>
+            <td data-value="{{ form.start_date|date:'Y-m-d' }}" data-label="Début">{{ form.start_date|date:"d/m/Y" }}</td>
+            <td data-value="{{ form.end_date|date:'Y-m-d' }}" data-label="Fin">{{ form.end_date|date:"d/m/Y" }}</td>
+            <td data-value="{{ form.last_registration_updated|date:'Y-m-d'|default:'' }}" data-label="Màj inscriptions">{{ form.last_registration_updated|date:"d/m/Y"|default:"—" }}</td>
         </tr>
         {% endfor %}
     </tbody>

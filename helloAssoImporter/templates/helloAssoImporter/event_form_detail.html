@@ -29,7 +29,7 @@
 </div>
 
 {% if registrations %}
-<input type="text" id="search" placeholder="Rechercher par nom, prénom ou payeur…" style="width:350px; margin-bottom:1.25rem;">
+<input type="text" id="search" placeholder="Rechercher par nom, prénom ou payeur…" style="width:100%; max-width:350px; margin-bottom:1.25rem;">
 
 <table id="reg-table">
     <thead>
@@ -45,12 +45,12 @@
     <tbody>
         {% for reg in registrations %}
         <tr>
-            <td data-value="{{ reg.first_name }}">{{ reg.first_name }}</td>
-            <td data-value="{{ reg.last_name }}">{{ reg.last_name }}</td>
-            <td data-value="{{ reg.name }}">{{ reg.name }}</td>
-            <td data-value="{{ reg.state }}"><span class="badge badge-{{ reg.state|lower }}">{{ reg.get_state_display }}</span></td>
-            <td data-value="{{ reg.order.payer_last_name }} {{ reg.order.payer_first_name }}">{{ reg.order.payer_first_name }} {{ reg.order.payer_last_name }}</td>
-            <td data-value="{{ reg.order.created_at|date:'Y-m-d' }}">{{ reg.order.created_at|date:"d/m/Y" }}</td>
+            <td data-value="{{ reg.first_name }}" data-label="Prénom">{{ reg.first_name }}</td>
+            <td data-value="{{ reg.last_name }}" data-label="Nom">{{ reg.last_name }}</td>
+            <td data-value="{{ reg.name }}" data-label="Catégorie">{{ reg.name }}</td>
+            <td data-value="{{ reg.state }}" data-label="Statut"><span class="badge badge-{{ reg.state|lower }}">{{ reg.get_state_display }}</span></td>
+            <td data-value="{{ reg.order.payer_last_name }} {{ reg.order.payer_first_name }}" data-label="Payeur">{{ reg.order.payer_first_name }} {{ reg.order.payer_last_name }}</td>
+            <td data-value="{{ reg.order.created_at|date:'Y-m-d' }}" data-label="Inscription">{{ reg.order.created_at|date:"d/m/Y" }}</td>
         </tr>
         {% endfor %}
     </tbody>

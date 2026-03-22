@@ -35,6 +35,18 @@
         input, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
         input:focus, select:focus { outline: none; border-color: #1a1a2e; }
         .form-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+
+        @media (max-width: 640px) {
+            main { margin: 1rem auto; padding: 0 0.75rem; }
+            nav { gap: 1rem; padding: 0.75rem 1rem; flex-wrap: wrap; }
+            table, thead, tbody, tr, th, td { display: block; }
+            thead { display: none; }
+            table { box-shadow: none; background: transparent; }
+            tr { background: white; border: 1px solid #eee; border-radius: 6px; margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+            td { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding: 0.6rem 1rem; }
+            td:last-child { border-bottom: none; }
+            td::before { content: attr(data-label); font-weight: 600; color: #555; flex-shrink: 0; margin-right: 1rem; }
+        }
     </style>
 </head>
 <body>
