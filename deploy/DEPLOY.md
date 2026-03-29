@@ -20,7 +20,7 @@ python3 -m venv .venv
 ```bash
 sudo mkdir /etc/helloasso
 sudo cp deploy/env.example /etc/helloasso/env
-sudo nano /etc/helloasso/env  # remplir SECRET_KEY, ALLOWED_HOSTS=<IP du VPS>, etc.
+sudo nano /etc/helloasso/env  # remplir SECRET_KEY, ALLOWED_HOSTS=<domaine>, etc.
 sudo chmod 600 /etc/helloasso/env
 ```
 
@@ -43,18 +43,18 @@ sudo systemctl enable --now helloasso
 sudo systemctl status helloasso
 ```
 
-## 5. Nginx (HTTP, sans domaine)
+## 5. Nginx + HTTPS (Let's Encrypt)
 
 ```bash
 sudo nano /etc/nginx/sites-available/helloasso
 ```
 
-Contenu :
+Contenu initial (remplacer `<domaine>` par le vrai domaine, ex: `botouraineplongee.ddns.net`) :
 
 ```nginx
 server {
     listen 80;
-    server_name _;
+    server_name <domaine>;
 
     location / {
         proxy_pass http://unix:/run/helloasso/gunicorn.sock;
@@ -71,7 +71,29 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-L'app est accessible sur `http://<IP du VPS>`.
+### Activer HTTPS avec Certbot
+
+```bash
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d <domaine>
+```
+
+Certbot modifie automatiquement la config Nginx pour ajouter le bloc HTTPS et la redirection HTTP→HTTPS. Le renouvellement automatique est configuré par Certbot.
+
+### Variables d'environnement à activer après HTTPS
+
+Dans `/etc/helloasso/env` :
+
+```
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+```
+
+```bash
+sudo systemctl restart helloasso
+```
+
+L'app est accessible sur `https://<domaine>`.
 
 ## Mise à jour
 
@@ -88,6 +110,7 @@ sudo systemctl restart helloasso
 
 ```bash
 sudo journalctl -u helloasso -f   # logs en temps réel
+sudo systemctl stop helloasso     # stoppe le serveur
 sudo systemctl restart helloasso  # redémarrer le serveur
 sudo systemctl status helloasso   # état du service
 sudo nginx -t                     # vérifier la config Nginx
