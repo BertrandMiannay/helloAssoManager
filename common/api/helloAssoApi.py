@@ -249,6 +249,9 @@ class HelloAssoApi:
                     }
                 )
                 for item in i.items or []:
+                    if item.name is None:
+                        logger.warning("Skipping item item_id=%s (name is None) for event '%s' (slug=%s) order_id=%s", item.id, form.title, form.form_slug, i.id)
+                        continue
                     _, created = EventRegistration.objects.update_or_create(
                         item_id=item.id,
                         defaults={
