@@ -92,8 +92,14 @@ class MemberShipFormAdmin(DeleteAuditAdminMixin, admin.ModelAdmin):
         }
 
 
+@admin.register(Member)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ("first_name", "last_name", "email", "medical_certificate_date")
+    search_fields = ("first_name", "last_name", "email")
+    fields = ("first_name", "last_name", "email", "medical_certificate_date")
+
+
 admin.site.register(Season)
 admin.site.register(MemberShipFormOrder)
-admin.site.register(Member)
 admin.site.register(EventFormOrder)
 admin.site.register(EventRegistration)

@@ -8,6 +8,15 @@
 <h1 style="margin-bottom:0.25rem;">{{ member.first_name }} {{ member.last_name }}</h1>
 <p style="color:#555; margin-bottom:1.5rem;">{{ member.email }}</p>
 
+<table style="max-width:600px; margin-bottom:2rem;">
+    <tbody>
+        <tr>
+            <th style="width:55%; text-align:left;">Certificat médical</th>
+            <td>{{ member.medical_certificate_date|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+    </tbody>
+</table>
+
 {% if current_order %}
 
 <h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Contact d'urgence</h2>
