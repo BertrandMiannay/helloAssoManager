@@ -122,6 +122,8 @@ class MemberShipFormOrder(models.Model):
     apnea_teaching_level = models.CharField(blank=True, default='')
     underwater_shooting_level = models.CharField(blank=True, default='')
     underwater_shooting_teaching_level = models.CharField(blank=True, default='')
+    emergency_contact_name = models.CharField(blank=True, default='')
+    emergency_contact_phone = models.CharField(blank=True, default='')
     updated_at = models.DateTimeField()
     created_at = models.DateTimeField()
 
