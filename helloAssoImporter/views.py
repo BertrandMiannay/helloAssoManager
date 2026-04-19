@@ -11,7 +11,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS
+from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS, CONTACT_FIELD_LABELS
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
 from django.views.generic import ListView, DetailView
 from django.db.models import Count, Q
@@ -151,7 +151,7 @@ def membership_form_detail(request, form_slug):
         if action == 'save_mapping':
             mapping = {
                 field: request.POST.get(field, '').strip()
-                for field in LEVEL_FIELD_LABELS
+                for field in {**LEVEL_FIELD_LABELS, **CONTACT_FIELD_LABELS}
                 if request.POST.get(field, '').strip()
             }
             membership_form.field_mapping = mapping
@@ -177,10 +177,15 @@ def membership_form_detail(request, form_slug):
             cache.set(cache_key, available_fields, 300)
         except HelloAssoApiError:
             available_fields = []
+    contact_mapping_rows = [
+        (field, label, membership_form.field_mapping.get(field, ''))
+        for field, label in CONTACT_FIELD_LABELS.items()
+    ]
     return render(request, 'helloAssoImporter/membership_form_detail.html', {
         'membership_form': membership_form,
         'orders': orders,
         'level_mapping_rows': level_mapping_rows,
+        'contact_mapping_rows': contact_mapping_rows,
         'available_fields': available_fields,
         'active_tab': 'formulaires',
     })

@@ -35,6 +35,12 @@ LEVEL_FIELD_LABELS = {
 }
 LEVEL_FIELDS = tuple(LEVEL_FIELD_LABELS)
 
+CONTACT_FIELD_LABELS = {
+    'emergency_contact_name': "Contact d'urgence - nom",
+    'emergency_contact_phone': "Contact d'urgence - téléphone",
+}
+CONTACT_FIELDS = tuple(CONTACT_FIELD_LABELS)
+
 
 def normalize_name(value: str) -> str:
     return value.strip().title()
@@ -202,6 +208,10 @@ class HelloAssoApi:
                             field: custom.get(form.field_mapping.get(field, ''), '')
                             for field in LEVEL_FIELDS
                         }
+                        contact_values = {
+                            field: custom.get(form.field_mapping.get(field, ''), '')
+                            for field in CONTACT_FIELDS
+                        }
                         _, order_created = MemberShipFormOrder.objects.update_or_create(
                             item_id=item.id,
                             defaults={
@@ -216,6 +226,7 @@ class HelloAssoApi:
                                 'licence_number': custom.get(FIELD_LICENCE, ''),
                                 'sex': custom.get(FIELD_SEX),
                                 **level_values,
+                                **contact_values,
                                 'updated_at': order.meta.updated_at if order.meta else None,
                                 'created_at': order.meta.created_at if order.meta else None,
                             }

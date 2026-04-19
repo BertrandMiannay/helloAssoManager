@@ -36,6 +36,22 @@
                 </td>
             </tr>
             {% endfor %}
+            {% for field, label, current_value in contact_mapping_rows %}
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:0.5rem 1rem 0.5rem 0; color:#374151;">{{ label }}</td>
+                <td style="padding:0.4rem 0;">
+                    <input type="text" name="{{ field }}" value="{{ current_value }}"
+                           list="fields-contact-{{ forloop.counter }}" autocomplete="off"
+                           placeholder="Rechercher un champ…"
+                           style="width:100%; max-width:380px; padding:0.3rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+                    <datalist id="fields-contact-{{ forloop.counter }}">
+                        {% for name in available_fields %}
+                        <option value="{{ name }}">
+                        {% endfor %}
+                    </datalist>
+                </td>
+            </tr>
+            {% endfor %}
             </tbody>
         </table>
         <button type="submit" class="btn btn-secondary" style="margin-top:1rem;">Enregistrer le mapping</button>
