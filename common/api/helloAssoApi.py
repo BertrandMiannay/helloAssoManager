@@ -178,7 +178,7 @@ class HelloAssoApi:
             for page in pages:
                 for order in page:
                     for item in order.items or []:
-                        custom = {f.name: f.answer for f in (item.custom_fields or [])}
+                        custom = {f.name.strip(): f.answer for f in (item.custom_fields or [])}
 
                         email = (custom.get(FIELD_EMAIL) or '').strip().lower()
                         first_name = normalize_name(item.user.first_name if item.user else '')

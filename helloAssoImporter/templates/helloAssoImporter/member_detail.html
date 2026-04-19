@@ -33,7 +33,9 @@
                 <th style="padding:0.4rem 0.75rem;">Apnée</th>
                 <th style="padding:0.4rem 0.75rem;">Enc. apnée</th>
                 <th style="padding:0.4rem 0.75rem;">Tir sous-marin</th>
-                <th style="padding:0.4rem 0;">Enc. TSM</th>
+                <th style="padding:0.4rem 0.75rem;">Enc. TSM</th>
+                <th style="padding:0.4rem 0.75rem;">Contact urgence</th>
+                <th style="padding:0.4rem 0;">Tél. urgence</th>
             </tr>
         </thead>
         <tbody>
@@ -48,7 +50,9 @@
             <td style="padding:0.4rem 0.75rem;">{{ order.apnea_level|default:"—" }}</td>
             <td style="padding:0.4rem 0.75rem;">{{ order.apnea_teaching_level|default:"—" }}</td>
             <td style="padding:0.4rem 0.75rem;">{{ order.underwater_shooting_level|default:"—" }}</td>
-            <td style="padding:0.4rem 0;">{{ order.underwater_shooting_teaching_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.underwater_shooting_teaching_level|default:"—" }}</td>
+            <td style="padding:0.4rem 0.75rem;">{{ order.emergency_contact_name|default:"—" }}</td>
+            <td style="padding:0.4rem 0;">{{ order.emergency_contact_phone|default:"—" }}</td>
         </tr>
         {% endfor %}
         </tbody>
