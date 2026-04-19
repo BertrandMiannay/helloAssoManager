@@ -60,6 +60,11 @@ class EventFormListView(ClubStaffRequiredMixin, ListView):
             ),
         )
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['active_tab'] = 'sorties'
+        return ctx
+
 
 class EventFormDetailView(ClubStaffRequiredMixin, DetailView):
     model = EventForm
@@ -324,6 +329,33 @@ def member_merge(request):
     if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return redirect(next_url)
     return redirect('saison-membres-doublons')
+
+
+@club_staff_required
+def inscriptions_member_list(request):
+    members = Member.objects.prefetch_related(
+        'membershipformorder_set__form__season'
+    ).order_by('last_name', 'first_name')
+    return render(request, 'helloAssoImporter/inscriptions_member_list.html', {
+        'members': members,
+        'active_tab': 'membres',
+    })
+
+
+@club_staff_required
+def inscriptions_member_detail(request, pk):
+    member = get_object_or_404(Member, pk=pk)
+    current_order = (
+        MemberShipFormOrder.objects
+        .filter(member=member, form__season__current=True)
+        .select_related('form__season')
+        .first()
+    )
+    return render(request, 'helloAssoImporter/inscriptions_member_detail.html', {
+        'member': member,
+        'current_order': current_order,
+        'active_tab': 'membres',
+    })
 
 
 @club_staff_required

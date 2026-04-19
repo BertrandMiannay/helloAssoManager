@@ -1,0 +1,67 @@
+{% extends "helloAssoImporter/inscriptions_base.html" %}
+
+{% block title %}{{ member.first_name }} {{ member.last_name }}{% endblock %}
+
+{% block inscriptions_content %}
+<a href="{% url 'inscriptions-membres' %}" class="btn btn-secondary" style="margin-bottom:1.5rem; display:inline-block;">← Retour</a>
+
+<h1 style="margin-bottom:0.25rem;">{{ member.first_name }} {{ member.last_name }}</h1>
+<p style="color:#555; margin-bottom:1.5rem;">{{ member.email }}</p>
+
+{% if current_order %}
+<div style="margin-bottom:0.75rem;">
+    {% if current_order.form.season %}
+    <span style="display:inline-block; background:#e0e7ff; color:#3730a3; padding:2px 10px; border-radius:4px; font-size:0.88em;">
+        Saison {{ current_order.form.season.label }}
+    </span>
+    {% endif %}
+</div>
+
+<table style="max-width:600px;">
+    <tbody>
+        <tr>
+            <th style="width:50%; text-align:left;">Catégorie</th>
+            <td>{{ current_order.category|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Date de naissance</th>
+            <td>{{ current_order.birthdate|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Sexe</th>
+            <td>{{ current_order.sex|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">N° licence</th>
+            <td>{{ current_order.licence_number|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Niveau plongée</th>
+            <td>{{ current_order.dive_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement plongée</th>
+            <td>{{ current_order.dive_teaching_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Niveau apnée</th>
+            <td>{{ current_order.apnea_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement apnée</th>
+            <td>{{ current_order.apnea_teaching_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Niveau tir sous-marin</th>
+            <td>{{ current_order.underwater_shooting_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement tir sous-marin</th>
+            <td>{{ current_order.underwater_shooting_teaching_level|default:"—" }}</td>
+        </tr>
+    </tbody>
+</table>
+{% else %}
+<p style="color:#999;">Aucune adhésion pour la saison en cours.</p>
+{% endif %}
+{% endblock %}

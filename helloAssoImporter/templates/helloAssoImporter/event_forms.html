@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends "helloAssoImporter/inscriptions_base.html" %}
 
 {% block title %}Sorties{% endblock %}
 
-{% block content %}
+{% block inscriptions_content %}
 <style>.sortable { cursor: pointer; }</style>
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">Liste des sorties</h1>
@@ -45,7 +45,7 @@
     document.getElementById('search').addEventListener('input', function () {
         const query = this.value.toLowerCase();
         document.querySelectorAll('#event-table tbody tr').forEach(function (row) {
-            const title = row.cells[0].textContent.toLowerCase(); // col 0 = titre, col 1 = inscrits, col 2-4 = dates
+            const title = row.cells[0].textContent.toLowerCase();
             row.style.display = title.includes(query) ? '' : 'none';
         });
     });
