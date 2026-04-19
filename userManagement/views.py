@@ -20,8 +20,7 @@ INVITE_EXPIRY_DAYS = 7
 
 
 def _is_club_staff(user):
-    """Formateurs, directeurs de plongée et administrateurs."""
-    return user.is_superuser or user.groups.filter(name__in=['admin', 'instructor', 'dive_director']).exists()
+    return user.is_club_staff
 
 
 def _make_permission_decorator(check_fn):

@@ -9,5 +9,6 @@ urlpatterns = [
     path('invitations/', include('invitations.urls', namespace='invitations')),
     path('inscriptions/', include('helloAssoImporter.urls')),
     path('saison/', include('helloAssoImporter.membres_urls')),
+    path('adherents/', include('helloAssoImporter.adherents_urls')),
     path('users/', include('userManagement.urls')),
 ]

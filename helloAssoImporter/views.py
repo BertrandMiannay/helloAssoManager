@@ -336,6 +336,37 @@ def member_merge(request):
     return redirect('saison-membres-doublons')
 
 
+class AdherentListView(ClubStaffRequiredMixin, ListView):
+    model = Member
+    template_name = 'helloAssoImporter/adherent_list.html'
+    context_object_name = 'members'
+
+    def get_queryset(self):
+        return (
+            Member.objects
+            .filter(membershipformorder__form__season__current=True)
+            .distinct()
+            .order_by('last_name', 'first_name')
+        )
+
+
+@club_staff_required
+def adherent_detail(request, pk):
+    member = get_object_or_404(
+        Member.objects.filter(membershipformorder__form__season__current=True).distinct(),
+        pk=pk,
+    )
+    current_order = (
+        MemberShipFormOrder.objects
+        .filter(member=member, form__season__current=True)
+        .first()
+    )
+    return render(request, 'helloAssoImporter/adherent_detail.html', {
+        'member': member,
+        'current_order': current_order,
+    })
+
+
 @club_staff_required
 def inscriptions_member_list(request):
     members = Member.objects.prefetch_related(

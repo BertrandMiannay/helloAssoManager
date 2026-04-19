@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Adhérents{% endblock %}
+
+{% block content %}
+<style>
+.sortable { cursor: pointer; }
+#member-table tbody tr:hover { background: #f0f4ff; }
+#member-table tbody tr td:first-child { color: #1a1a2e; font-weight: 500; text-decoration: underline; }
+</style>
+
+<h1 style="margin-bottom:1.5rem;">Adhérents — saison en cours</h1>
+
+<input type="text" id="search" placeholder="Rechercher par nom, prénom ou email…"
+       style="width:100%; max-width:400px; margin-bottom:1.25rem;">
+
+{% if members %}
+<p style="color:#555; margin-bottom:1rem;">{{ members|length }} adhérent{{ members|length|pluralize }}</p>
+<table id="member-table">
+    <thead>
+        <tr>
+            <th class="sortable">Prénom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Nom <span class="sort-icon">↕</span></th>
+            <th class="sortable">Email <span class="sort-icon">↕</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr style="cursor:pointer;" onclick="window.location='{% url 'adherent-detail' member.pk %}'">
+            <td data-value="{{ member.first_name }}" data-label="Prénom">{{ member.first_name }}</td>
+            <td data-value="{{ member.last_name }}" data-label="Nom">{{ member.last_name }}</td>
+            <td data-value="{{ member.email }}" data-label="Email">{{ member.email }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('search').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('#member-table tbody tr').forEach(function (row) {
+            const text = row.cells[0].textContent.toLowerCase()
+                       + row.cells[1].textContent.toLowerCase()
+                       + row.cells[2].textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    let sortState = { col: null, asc: true };
+
+    document.querySelectorAll('#member-table th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            const col = this.cellIndex;
+            sortState.asc = sortState.col === col ? !sortState.asc : true;
+            sortState.col = col;
+
+            document.querySelectorAll('#member-table th.sortable .sort-icon').forEach(el => el.textContent = '↕');
+            this.querySelector('.sort-icon').textContent = sortState.asc ? '↑' : '↓';
+
+            const tbody = document.querySelector('#member-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                const aVal = a.cells[col].dataset.value;
+                const bVal = b.cells[col].dataset.value;
+                const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+                return sortState.asc ? cmp : -cmp;
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+</script>
+{% else %}
+<p style="color:#999;">Aucun adhérent pour la saison en cours.</p>
+{% endif %}
+{% endblock %}

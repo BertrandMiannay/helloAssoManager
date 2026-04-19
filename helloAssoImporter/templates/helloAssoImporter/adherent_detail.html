@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.first_name }} {{ member.last_name }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'adherents' %}" class="btn btn-secondary" style="margin-bottom:1.5rem; display:inline-block;">← Retour</a>
+
+<h1 style="margin-bottom:0.25rem;">{{ member.first_name }} {{ member.last_name }}</h1>
+<p style="color:#555; margin-bottom:1.5rem;">{{ member.email }}</p>
+
+{% if current_order %}
+
+<h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Contact d'urgence</h2>
+<table style="max-width:600px; margin-bottom:2rem;">
+    <tbody>
+        <tr>
+            <th style="width:55%; text-align:left;">Nom / Prénom</th>
+            <td>{{ current_order.emergency_contact_name|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Téléphone</th>
+            <td>{{ current_order.emergency_contact_phone|default:"—" }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Niveaux</h2>
+<table style="max-width:600px;">
+    <tbody>
+        <tr>
+            <th style="width:55%; text-align:left;">Plongée</th>
+            <td>{{ current_order.dive_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement plongée</th>
+            <td>{{ current_order.dive_teaching_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Apnée</th>
+            <td>{{ current_order.apnea_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement apnée</th>
+            <td>{{ current_order.apnea_teaching_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Tir sur cible</th>
+            <td>{{ current_order.underwater_shooting_level|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th style="text-align:left;">Encadrement tir sur cible</th>
+            <td>{{ current_order.underwater_shooting_teaching_level|default:"—" }}</td>
+        </tr>
+    </tbody>
+</table>
+
+{% else %}
+<p style="color:#999;">Aucune adhésion pour la saison en cours.</p>
+{% endif %}
+{% endblock %}
