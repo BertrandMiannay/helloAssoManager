@@ -84,6 +84,41 @@
 </div>
 
 <div class="member-card">
+    <h2 style="font-size:1.1rem; margin-bottom:1rem;">Formations</h2>
+    {% if member_formations %}
+    <ul style="list-style:none; padding:0; margin:0 0 1rem;">
+        {% for cursus in member_formations %}
+        <li style="display:flex; align-items:center; gap:0.75rem; padding:0.4rem 0; border-bottom:1px solid #f0f0f0;">
+            <span style="flex:1;">{{ cursus.name }}</span>
+            <span style="font-size:0.8rem; color:#6b7280;">{{ cursus.date|date:"Y" }}</span>
+            <form method="post" style="margin:0;">
+                {% csrf_token %}
+                <input type="hidden" name="_action" value="formation_remove">
+                <input type="hidden" name="cursus_id" value="{{ cursus.pk }}">
+                <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.6rem; font-size:0.8rem;"
+                        onclick="return confirm('Retirer la formation « {{ cursus.name }} » ?')">Retirer</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color:#999; margin-bottom:1rem;">Aucune formation associée.</p>
+    {% endif %}
+    {% if available_cursus %}
+    <form method="post" style="display:flex; align-items:center; gap:0.5rem;">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="formation_add">
+        <select name="cursus_id" style="flex:1; max-width:300px; padding:0.35rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;">
+            {% for cursus in available_cursus %}
+            <option value="{{ cursus.pk }}">{{ cursus.name }} ({{ cursus.date|date:"Y" }})</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Associer</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="member-card">
     <h2 style="font-size:1.1rem; margin-bottom:1rem;">Fusionner avec un autre membre</h2>
     <p style="color:#666; font-size:0.9em; margin-bottom:1rem;">
         Recherchez le membre à fusionner. Les inscriptions du membre trouvé seront transférées sur <strong>{{ member.first_name }} {{ member.last_name }}</strong>, puis le doublon sera supprimé.

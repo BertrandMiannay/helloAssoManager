@@ -224,9 +224,21 @@ def cursus_detail(request, pk):
             return redirect('saison-cursus-detail', pk=pk)
 
     categories = cursus.categories.prefetch_related('skills').all()
+    cursus_json = json.dumps({
+        'name': cursus.name,
+        'date': cursus.date.isoformat(),
+        'categories': [
+            {
+                'name': cat.name,
+                'skills': [{'name': skill.name} for skill in cat.skills.all()],
+            }
+            for cat in categories
+        ],
+    }, indent=2, ensure_ascii=False)
     return render(request, 'helloAssoImporter/cursus_detail.html', {
         'cursus': cursus,
         'categories': categories,
+        'cursus_json': cursus_json,
         'active_tab': 'formation',
     })
 
@@ -470,6 +482,21 @@ def member_detail(request, pk):
                                 member.pk, new_birthdate, request.user.username)
                 return redirect('saison-membre-detail', pk=pk)
 
+        elif action == 'formation_add':
+            cursus_id = request.POST.get('cursus_id')
+            if cursus_id:
+                cursus = get_object_or_404(Cursus, pk=cursus_id)
+                member.formations.add(cursus)
+                logger.info("MEMBER_FORMATION_ADD pk=%s cursus=%s by=%s", member.pk, cursus_id, request.user.username)
+            return redirect('saison-membre-detail', pk=pk)
+
+        elif action == 'formation_remove':
+            cursus_id = request.POST.get('cursus_id')
+            if cursus_id:
+                member.formations.remove(cursus_id)
+                logger.info("MEMBER_FORMATION_REMOVE pk=%s cursus=%s by=%s", member.pk, cursus_id, request.user.username)
+            return redirect('saison-membre-detail', pk=pk)
+
         elif action == 'cert':
             from datetime import date
             raw_cert = request.POST.get('medical_certificate_date', '').strip()
@@ -497,6 +524,8 @@ def member_detail(request, pk):
             .exclude(pk=pk)
             .prefetch_related('membershipformorder_set__form__season')
         )
+    member_formations = member.formations.all()
+    available_cursus = Cursus.objects.filter(status=Cursus.Status.ACTIVE).exclude(pk__in=member_formations)
     return render(request, 'helloAssoImporter/member_detail.html', {
         'member': member,
         'orders': orders,
@@ -505,6 +534,8 @@ def member_detail(request, pk):
         'email_error': email_error,
         'birthdate_error': birthdate_error,
         'cert_error': cert_error,
+        'member_formations': member_formations,
+        'available_cursus': available_cursus,
         'active_tab': 'membres',
     })
 

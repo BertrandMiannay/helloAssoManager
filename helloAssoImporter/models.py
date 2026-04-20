@@ -101,6 +101,8 @@ class Member(models.Model):
             )
         ]
 
+    formations = models.ManyToManyField('Cursus', blank=True, related_name='members')
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} <{self.email}>"
 

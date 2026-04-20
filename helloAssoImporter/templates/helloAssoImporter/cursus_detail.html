@@ -140,6 +140,29 @@
   {% endfor %}
 </div>
 
+<!-- Export JSON -->
+<div class="detail-card">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+    <h2 style="font-size:1rem; margin:0;">Exporter</h2>
+    <button id="copy-json-btn" class="btn btn-secondary" style="font-size:0.85rem; padding:0.25rem 0.75rem;">
+      Copier
+    </button>
+  </div>
+  <pre id="cursus-json-output" style="background:#f8f9fa; border:1px solid #e5e7eb; border-radius:4px;
+       padding:1rem; font-size:0.8rem; overflow-x:auto; white-space:pre; margin:0;">{{ cursus_json }}</pre>
+</div>
+
+<script>
+document.getElementById('copy-json-btn').addEventListener('click', function () {
+  const text = document.getElementById('cursus-json-output').textContent;
+  navigator.clipboard.writeText(text).then(function () {
+    const btn = document.getElementById('copy-json-btn');
+    btn.textContent = 'Copié !';
+    setTimeout(function () { btn.textContent = 'Copier'; }, 2000);
+  });
+});
+</script>
+
 <script>
 (function () {
   // Drag-and-drop générique

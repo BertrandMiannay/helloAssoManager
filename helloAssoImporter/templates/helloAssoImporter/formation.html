@@ -14,7 +14,10 @@
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
   <h1 style="margin:0;">Cursus de formation</h1>
-  <a href="{% url 'saison-cursus-creer' %}" class="btn btn-primary">+ Nouveau cursus</a>
+  <div style="display:flex; gap:0.5rem;">
+    <a href="{% url 'saison-cursus-importer' %}" class="btn btn-secondary">Importer formation</a>
+    <a href="{% url 'saison-cursus-creer' %}" class="btn btn-primary">+ Nouveau cursus</a>
+  </div>
 </div>
 
 {% if cursus_list %}
