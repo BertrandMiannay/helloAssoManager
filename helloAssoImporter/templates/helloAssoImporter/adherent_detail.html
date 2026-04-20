@@ -93,10 +93,16 @@
                     <span id="chevron-{{ cursus.pk }}" style="display:inline-block; margin-right:0.4rem; transition:transform 0.15s;">▼</span>
                     {{ cursus.name }}
                 </span>
-                <button type="submit" onclick="event.stopPropagation()"
-                    style="padding:0.3rem 1rem; background:#1a1a2e; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.88rem;">
-                    Enregistrer
-                </button>
+                <div style="display:flex; gap:0.5rem;" onclick="event.stopPropagation()">
+                    <button type="submit"
+                        style="padding:0.3rem 1rem; background:#1a1a2e; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.88rem;">
+                        Enregistrer
+                    </button>
+                    <a href="{% url 'adherent-formation-export' member.pk cursus.pk %}"
+                        style="padding:0.3rem 1rem; background:white; color:#1a1a2e; border:1px solid #1a1a2e; border-radius:4px; cursor:pointer; font-size:0.88rem; text-decoration:none; display:inline-flex; align-items:center;">
+                        Exporter l'évaluation
+                    </a>
+                </div>
             </div>
 
             <div id="cursus-body-{{ cursus.pk }}">
@@ -134,7 +140,7 @@
                             <tr style="border-bottom:1px solid #f3f4f6;">
                                 <td colspan="3" style="padding:0 0.5rem 0.5rem 1.5rem;">
                                     {% for ev in skill.evaluations %}
-                                    <div style="font-size:0.78rem; color:#6b7280; display:flex; gap:0.75rem; padding:0.15rem 0; {% if not forloop.last %}border-bottom:1px dotted #e5e7eb;{% endif %}">
+                                    <div style="font-size:0.78rem; color:#6b7280; display:flex; align-items:center; gap:0.75rem; padding:0.15rem 0; {% if not forloop.last %}border-bottom:1px dotted #e5e7eb;{% endif %}">
                                         <span style="white-space:nowrap; color:#9ca3af;">{{ ev.date|date:"d/m/Y" }}</span>
                                         <span style="white-space:nowrap;">
                                             {% if ev.status == 'acquired' %}<span style="color:#166534;">✓ Acquis</span>
@@ -142,6 +148,11 @@
                                             {% else %}<span style="color:#9ca3af;">— Non acquis</span>{% endif %}
                                         </span>
                                         {% if ev.comment %}<span style="color:#374151;">{{ ev.comment }}</span>{% endif %}
+                                        <button type="submit" name="_delete_ev" value="{{ ev.pk }}"
+                                            formaction="{% url 'adherent-evaluation-delete' member.pk ev.pk %}"
+                                            onclick="event.stopPropagation(); return confirm('Supprimer ce commentaire ?');"
+                                            title="Supprimer"
+                                            style="background:none; border:none; cursor:pointer; color:#dc2626; font-size:0.85rem; padding:0; line-height:1;">✕</button>
                                     </div>
                                     {% endfor %}
                                 </td>

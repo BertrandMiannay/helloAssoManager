@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS, CONTACT_FIELD_LABELS
@@ -618,6 +619,7 @@ def adherent_detail(request, pk):
     evaluations_map = {}
     for ev in SkillEvaluation.objects.filter(member=member, skill_id__in=skill_ids).order_by('-date', '-pk'):
         evaluations_map.setdefault(ev.skill_id, []).append({
+            'pk': ev.pk,
             'date': ev.date,
             'status': ev.status,
             'status_display': ev.get_status_display(),
@@ -652,7 +654,6 @@ def adherent_formation_save(request, pk, cursus_pk):
     if request.method != 'POST':
         return redirect('adherent-detail', pk=pk)
     from django.utils import timezone as tz
-    from django.urls import reverse
     member = get_object_or_404(
         Member.objects.filter(membershipformorder__form__season__current=True).distinct(),
         pk=pk,
@@ -675,6 +676,131 @@ def adherent_formation_save(request, pk, cursus_pk):
                 member=member, skill=skill,
                 date=today, status=status, comment=comment,
             )
+    return redirect(reverse('adherent-detail', args=[pk]) + '?tab=formation')
+
+
+@club_staff_required
+def adherent_formation_export(request, pk, cursus_pk):
+    import io
+    from django.http import HttpResponse
+    from django.utils.formats import date_format
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    member = get_object_or_404(
+        Member.objects.filter(membershipformorder__form__season__current=True).distinct(),
+        pk=pk,
+    )
+    cursus = get_object_or_404(Cursus, pk=cursus_pk)
+
+    categories = (
+        cursus.categories
+        .prefetch_related('skills__member_skills', 'skills__evaluations')
+        .all()
+    )
+    member_skills = {
+        ms.skill_id: ms
+        for ms in MemberSkill.objects.filter(member=member, skill__category__cursus=cursus)
+    }
+    evaluations_by_skill = {}
+    for ev in SkillEvaluation.objects.filter(member=member, skill__category__cursus=cursus).order_by('-date'):
+        evaluations_by_skill.setdefault(ev.skill_id, []).append(ev)
+
+    STATUS_LABELS = {
+        MemberSkill.SkillStatus.NOT_ACQUIRED: 'Non acquis',
+        MemberSkill.SkillStatus.IN_PROGRESS:  "En cours",
+        MemberSkill.SkillStatus.ACQUIRED:     'Acquis',
+    }
+
+    styles = getSampleStyleSheet()
+    small = ParagraphStyle('small', parent=styles['Normal'], fontSize=8, leading=10)
+    small_grey = ParagraphStyle('small_grey', parent=small, textColor=colors.HexColor('#6b7280'))
+    bold_cat = ParagraphStyle('bold_cat', parent=styles['Normal'], fontSize=9, leading=11, fontName='Helvetica-Bold')
+    header_style = ParagraphStyle('header', parent=styles['Normal'], fontSize=8, leading=10, fontName='Helvetica-Bold')
+
+    COL_WIDTHS = [8 * cm, 3 * cm, 7.5 * cm]
+
+    table_data = [[
+        Paragraph('Compétence', header_style),
+        Paragraph('Statut', header_style),
+        Paragraph('Commentaires', header_style),
+    ]]
+
+    row_styles = []
+    current_row = 1
+
+    for category in categories:
+        table_data.append([
+            Paragraph(category.name, bold_cat),
+            '', '',
+        ])
+        row_styles.append(('BACKGROUND', (0, current_row), (-1, current_row), colors.HexColor('#f3f4f6')))
+        row_styles.append(('SPAN', (0, current_row), (-1, current_row)))
+        current_row += 1
+
+        for skill in category.skills.all():
+            ms = member_skills.get(skill.pk)
+            status_label = STATUS_LABELS.get(ms.status if ms else None, 'Non acquis')
+            evs = evaluations_by_skill.get(skill.pk, [])
+
+            comment_lines = []
+            for ev in evs:
+                date_str = date_format(ev.date, 'd/m/Y')
+                comment_lines.append(f"<font color='#9ca3af'>{date_str}</font> {ev.comment}" if ev.comment else f"<font color='#9ca3af'>{date_str}</font>")
+            comment_para = Paragraph('<br/>'.join(comment_lines), small_grey) if comment_lines else ''
+
+            table_data.append([
+                Paragraph(skill.name, small),
+                Paragraph(status_label, small),
+                comment_para,
+            ])
+            current_row += 1
+
+    table = Table(table_data, colWidths=COL_WIDTHS, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND',   (0, 0), (-1, 0),  colors.HexColor('#1a1a2e')),
+        ('TEXTCOLOR',    (0, 0), (-1, 0),  colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+        ('GRID',         (0, 0), (-1, -1), 0.4, colors.HexColor('#e5e7eb')),
+        ('VALIGN',       (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING',   (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING',(0, 0), (-1, -1), 4),
+        ('LEFTPADDING',  (0, 0), (-1, -1), 6),
+        *row_styles,
+    ]))
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+        leftMargin=1.5 * cm, rightMargin=1.5 * cm,
+    )
+
+    title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=14, spaceAfter=12)
+
+    story = [
+        Paragraph(cursus.name, title_style),
+        table,
+    ]
+    doc.build(story)
+
+    buf.seek(0)
+    filename = f"evaluation_{member.last_name}_{member.first_name}_{cursus.name}.pdf"
+    response = HttpResponse(buf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@club_staff_required
+def adherent_evaluation_delete(request, pk, ev_pk):
+    if request.method != 'POST':
+        return redirect('adherent-detail', pk=pk)
+    ev = get_object_or_404(SkillEvaluation, pk=ev_pk, member__pk=pk)
+    cursus_pk = ev.skill.category.cursus_id
+    ev.delete()
     return redirect(reverse('adherent-detail', args=[pk]) + '?tab=formation')
 
 
