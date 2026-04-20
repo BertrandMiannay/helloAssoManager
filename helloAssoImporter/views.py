@@ -256,21 +256,43 @@ def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
 
     email_error = None
+    cert_error = None
     if request.method == 'POST':
-        new_email = request.POST.get('email', '').strip().lower()
-        if not new_email:
-            email_error = "L'adresse email ne peut pas être vide."
-        elif Member.objects.filter(
-            email=new_email, first_name=member.first_name, last_name=member.last_name
-        ).exclude(pk=pk).exists():
-            email_error = "Un membre avec ce nom et cet email existe déjà."
-        else:
-            old_email = member.email
-            member.email = new_email
-            member.save(update_fields=['email'])
-            logger.info("MEMBER_EMAIL_CHANGE pk=%s old=%s new=%s by=%s",
-                        member.pk, old_email, new_email, request.user.username)
-            return redirect('saison-membre-detail', pk=pk)
+        action = request.POST.get('_action')
+
+        if action == 'email':
+            new_email = request.POST.get('email', '').strip().lower()
+            if not new_email:
+                email_error = "L'adresse email ne peut pas être vide."
+            elif Member.objects.filter(
+                email=new_email, first_name=member.first_name, last_name=member.last_name
+            ).exclude(pk=pk).exists():
+                email_error = "Un membre avec ce nom et cet email existe déjà."
+            else:
+                if new_email != member.email:
+                    old_email = member.email
+                    member.email = new_email
+                    member.save(update_fields=['email'])
+                    logger.info("MEMBER_EMAIL_CHANGE pk=%s old=%s new=%s by=%s",
+                                member.pk, old_email, new_email, request.user.username)
+                return redirect('saison-membre-detail', pk=pk)
+
+        elif action == 'cert':
+            from datetime import date
+            raw_cert = request.POST.get('medical_certificate_date', '').strip()
+            new_cert = None
+            if raw_cert:
+                try:
+                    new_cert = date.fromisoformat(raw_cert)
+                except ValueError:
+                    cert_error = "Format de date invalide (attendu : AAAA-MM-JJ)."
+            if not cert_error:
+                if new_cert != member.medical_certificate_date:
+                    member.medical_certificate_date = new_cert
+                    member.save(update_fields=['medical_certificate_date'])
+                    logger.info("MEMBER_CERT_CHANGE pk=%s date=%s by=%s",
+                                member.pk, new_cert, request.user.username)
+                return redirect('saison-membre-detail', pk=pk)
 
     orders = MemberShipFormOrder.objects.filter(member=member).select_related('form__season').order_by('form__start_date')
     query = request.GET.get('q', '').strip()
@@ -288,6 +310,7 @@ def member_detail(request, pk):
         'query': query,
         'candidates': candidates,
         'email_error': email_error,
+        'cert_error': cert_error,
         'active_tab': 'membres',
     })
 

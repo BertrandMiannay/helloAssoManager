@@ -14,15 +14,25 @@
 </div>
 
 <div class="member-card">
-    <form method="post" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+    <form method="post" style="display:flex; align-items:center; gap:0.5rem; max-width:560px; margin-bottom:0.5rem;">
         {% csrf_token %}
-        <label for="member-email" style="white-space:nowrap;"><strong>Email :</strong></label>
+        <input type="hidden" name="_action" value="email">
+        <label for="member-email" style="width:160px; min-width:160px; white-space:nowrap;"><strong>Email :</strong></label>
         <input type="email" id="member-email" name="email" value="{{ member.email }}"
-               style="flex:1; max-width:320px; padding:0.3rem 0.6rem; border:1px solid {% if email_error %}#dc3545{% else %}#ccc{% endif %}; border-radius:4px; font-size:0.95rem;">
+               style="flex:1; padding:0.3rem 0.6rem; border:1px solid {% if email_error %}#dc3545{% else %}#ccc{% endif %}; border-radius:4px; font-size:0.95rem;">
         <button type="submit" class="btn btn-secondary" style="white-space:nowrap;">Enregistrer</button>
     </form>
-    {% if email_error %}<p style="color:#dc3545; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:0.5rem;">{{ email_error }}</p>{% endif %}
-    <p style="margin-top:0.75rem;"><strong>Certificat médical :</strong> {{ member.medical_certificate_date|date:"d/m/Y"|default:"—" }}</p>
+    {% if email_error %}<p style="color:#dc3545; font-size:0.875rem; margin-bottom:0.5rem; padding-left:168px;">{{ email_error }}</p>{% endif %}
+    <form method="post" style="display:flex; align-items:center; gap:0.5rem; max-width:560px; margin-bottom:0.5rem;">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="cert">
+        <label for="member-cert" style="width:160px; min-width:160px; white-space:nowrap;"><strong>Certificat médical :</strong></label>
+        <input type="date" id="member-cert" name="medical_certificate_date"
+               value="{{ member.medical_certificate_date|date:'Y-m-d' }}"
+               style="flex:1; padding:0.3rem 0.6rem; border:1px solid {% if cert_error %}#dc3545{% else %}#ccc{% endif %}; border-radius:4px; font-size:0.95rem;">
+        <button type="submit" class="btn btn-secondary" style="white-space:nowrap;">Enregistrer</button>
+    </form>
+    {% if cert_error %}<p style="color:#dc3545; font-size:0.875rem; margin-bottom:0.5rem; padding-left:168px;">{{ cert_error }}</p>{% endif %}
     <p style="margin-top:0.75rem;"><strong>Inscriptions :</strong></p>
     {% if orders %}
     <table style="width:100%; border-collapse:collapse; margin-top:0.5rem; font-size:0.9rem;">
