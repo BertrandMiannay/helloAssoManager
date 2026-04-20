@@ -33,6 +33,16 @@
         <button type="submit" class="btn btn-secondary" style="white-space:nowrap;">Enregistrer</button>
     </form>
     {% if cert_error %}<p style="color:#dc3545; font-size:0.875rem; margin-bottom:0.5rem; padding-left:168px;">{{ cert_error }}</p>{% endif %}
+    <form method="post" style="display:flex; align-items:center; gap:0.5rem; max-width:560px; margin-bottom:0.5rem;">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="birthdate">
+        <label for="member-birthdate" style="width:160px; min-width:160px; white-space:nowrap;"><strong>Date de naissance :</strong></label>
+        <input type="date" id="member-birthdate" name="birthdate"
+               value="{{ member.birthdate|date:'Y-m-d' }}"
+               style="flex:1; padding:0.3rem 0.6rem; border:1px solid {% if birthdate_error %}#dc3545{% else %}#ccc{% endif %}; border-radius:4px; font-size:0.95rem;">
+        <button type="submit" class="btn btn-secondary" style="white-space:nowrap;">Enregistrer</button>
+    </form>
+    {% if birthdate_error %}<p style="color:#dc3545; font-size:0.875rem; margin-bottom:0.5rem; padding-left:168px;">{{ birthdate_error }}</p>{% endif %}
     <p style="margin-top:0.75rem;"><strong>Inscriptions :</strong></p>
     {% if orders %}
     <table style="width:100%; border-collapse:collapse; margin-top:0.5rem; font-size:0.9rem;">

@@ -256,6 +256,7 @@ def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
 
     email_error = None
+    birthdate_error = None
     cert_error = None
     if request.method == 'POST':
         action = request.POST.get('_action')
@@ -275,6 +276,23 @@ def member_detail(request, pk):
                     member.save(update_fields=['email'])
                     logger.info("MEMBER_EMAIL_CHANGE pk=%s old=%s new=%s by=%s",
                                 member.pk, old_email, new_email, request.user.username)
+                return redirect('saison-membre-detail', pk=pk)
+
+        elif action == 'birthdate':
+            from datetime import date
+            raw_birthdate = request.POST.get('birthdate', '').strip()
+            new_birthdate = None
+            if raw_birthdate:
+                try:
+                    new_birthdate = date.fromisoformat(raw_birthdate)
+                except ValueError:
+                    birthdate_error = "Format de date invalide (attendu : AAAA-MM-JJ)."
+            if not birthdate_error:
+                if new_birthdate != member.birthdate:
+                    member.birthdate = new_birthdate
+                    member.save(update_fields=['birthdate'])
+                    logger.info("MEMBER_BIRTHDATE_CHANGE pk=%s date=%s by=%s",
+                                member.pk, new_birthdate, request.user.username)
                 return redirect('saison-membre-detail', pk=pk)
 
         elif action == 'cert':
@@ -310,6 +328,7 @@ def member_detail(request, pk):
         'query': query,
         'candidates': candidates,
         'email_error': email_error,
+        'birthdate_error': birthdate_error,
         'cert_error': cert_error,
         'active_tab': 'membres',
     })

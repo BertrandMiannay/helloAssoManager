@@ -90,6 +90,7 @@ class Member(models.Model):
     email = models.CharField()
     first_name = models.CharField()
     last_name = models.CharField()
+    birthdate = models.DateField(null=True, blank=True)
     medical_certificate_date = models.DateField(null=True, blank=True)
 
     class Meta:

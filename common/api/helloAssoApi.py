@@ -204,6 +204,10 @@ class HelloAssoApi:
                             except ValueError:
                                 logger.warning("Invalid birthdate '%s' for item %s", birthdate_str, item.id)
 
+                        if birthdate and member.birthdate != birthdate:
+                            member.birthdate = birthdate
+                            member.save(update_fields=['birthdate'])
+
                         level_values = {
                             field: custom.get(form.field_mapping.get(field, ''), '')
                             for field in LEVEL_FIELDS
