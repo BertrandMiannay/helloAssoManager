@@ -1,0 +1,71 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Importer une formation{% endblock %}
+
+{% block saison_content %}
+<style>
+  .import-card {
+    background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .json-example {
+    background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 4px;
+    padding: 1rem; font-family: monospace; font-size: 0.85rem;
+    white-space: pre; overflow-x: auto; color: #374151;
+  }
+</style>
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+  <a href="{% url 'saison-formation' %}" style="color:#666; text-decoration:none;">← Retour</a>
+  <h1 style="margin:0;">Importer une formation</h1>
+</div>
+
+<div class="import-card">
+  <h2 style="font-size:1rem; margin:0 0 0.5rem;">Format JSON attendu</h2>
+  <p style="color:#6b7280; font-size:0.875rem; margin:0 0 0.75rem;">
+    Collez le JSON décrivant le cursus. Les catégories et compétences seront créées dans l'ordre fourni.
+  </p>
+  <div class="json-example">{
+  "name": "Cursus Niveau 2",
+  "date": "2024-09-01",
+  "categories": [
+    {
+      "name": "Équipement",
+      "skills": [
+        {"name": "Montage du détendeur"},
+        {"name": "Gréement du gilet"}
+      ]
+    },
+    {
+      "name": "Techniques subaquatiques",
+      "skills": [
+        {"name": "Équilibrage"},
+        {"name": "Palmage en surface"}
+      ]
+    }
+  ]
+}</div>
+</div>
+
+<div class="import-card">
+  {% if error %}
+  <div style="background:#fee2e2; color:#991b1b; padding:0.75rem 1rem; border-radius:4px; margin-bottom:1rem;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="json_data" style="font-weight:600;">Données JSON</label>
+      <textarea id="json_data" name="json_data" rows="20"
+                style="font-family:monospace; font-size:0.875rem; width:100%; box-sizing:border-box;"
+                placeholder='{ "name": "...", "date": "AAAA-MM-JJ", "categories": [ ... ] }'
+                required>{{ json_text }}</textarea>
+    </div>
+    <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+      <button type="submit" class="btn btn-primary">Importer</button>
+      <a href="{% url 'saison-formation' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

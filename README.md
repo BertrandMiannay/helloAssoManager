@@ -1,3 +1,35 @@
+## Importer une formation (JSON)
+
+L'onglet **Importer formation** (section Gestion du club) permet de créer un cursus complet en collant du JSON.
+
+```json
+{
+  "name": "Cursus Niveau 2",
+  "date": "2024-09-01",
+  "categories": [
+    {
+      "name": "Équipement",
+      "skills": [
+        {"name": "Montage du détendeur"},
+        {"name": "Gréement du gilet"}
+      ]
+    },
+    {
+      "name": "Techniques subaquatiques",
+      "skills": [
+        {"name": "Équilibrage"},
+        {"name": "Palmage en surface"}
+      ]
+    }
+  ]
+}
+```
+
+Champs :
+- `name` *(requis)* — nom du cursus
+- `date` *(requis)* — date de version, format `AAAA-MM-JJ`
+- `categories` — liste de catégories, chacune avec un `name` et une liste `skills` (objets `{"name": "..."}`)
+
 ## Rôles utilisateurs
 
 | Rôle | Label | Gestion des utilisateurs | Sorties |
