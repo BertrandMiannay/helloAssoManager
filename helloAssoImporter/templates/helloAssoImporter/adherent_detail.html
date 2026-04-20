@@ -8,67 +8,183 @@
 <h1 style="margin-bottom:0.25rem;">{{ member.first_name }} {{ member.last_name }}</h1>
 <p style="color:#555; margin-bottom:1.5rem;">{{ member.email }}</p>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Informations</h2>
-<table style="max-width:600px; margin-bottom:2rem;">
-    <tbody>
-        <tr>
-            <th style="width:55%; text-align:left;">Date de naissance</th>
-            <td>{{ member.birthdate|date:"d/m/Y"|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Certificat médical</th>
-            <td>{{ member.medical_certificate_date|date:"d/m/Y"|default:"—" }}</td>
-        </tr>
-    </tbody>
-</table>
+<div style="display:flex; gap:0; margin-bottom:2rem; border-bottom:2px solid #1a1a2e;">
+    <button onclick="showTab('informations')" id="tab-btn-informations"
+        style="padding:0.5rem 1.25rem; border:none; cursor:pointer; font-size:0.95rem; background:#1a1a2e; color:white;">
+        Informations
+    </button>
+    <button onclick="showTab('formation')" id="tab-btn-formation"
+        style="padding:0.5rem 1.25rem; border:none; cursor:pointer; font-size:0.95rem; background:none; color:#1a1a2e;">
+        Formation en cours
+    </button>
+</div>
 
-{% if current_order %}
+<div id="tab-informations">
+    <h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Informations</h2>
+    <table style="max-width:600px; margin-bottom:2rem;">
+        <tbody>
+            <tr>
+                <th style="width:55%; text-align:left;">Date de naissance</th>
+                <td>{{ member.birthdate|date:"d/m/Y"|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Certificat médical</th>
+                <td>{{ member.medical_certificate_date|date:"d/m/Y"|default:"—" }}</td>
+            </tr>
+        </tbody>
+    </table>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Contact d'urgence</h2>
-<table style="max-width:600px; margin-bottom:2rem;">
-    <tbody>
-        <tr>
-            <th style="width:55%; text-align:left;">Nom / Prénom</th>
-            <td>{{ current_order.emergency_contact_name|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Téléphone</th>
-            <td>{{ current_order.emergency_contact_phone|default:"—" }}</td>
-        </tr>
-    </tbody>
-</table>
+    {% if current_order %}
+    <h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Contact d'urgence</h2>
+    <table style="max-width:600px; margin-bottom:2rem;">
+        <tbody>
+            <tr>
+                <th style="width:55%; text-align:left;">Nom / Prénom</th>
+                <td>{{ current_order.emergency_contact_name|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Téléphone</th>
+                <td>{{ current_order.emergency_contact_phone|default:"—" }}</td>
+            </tr>
+        </tbody>
+    </table>
 
-<h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Niveaux</h2>
-<table style="max-width:600px;">
-    <tbody>
-        <tr>
-            <th style="width:55%; text-align:left;">Plongée</th>
-            <td>{{ current_order.dive_level|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Encadrement plongée</th>
-            <td>{{ current_order.dive_teaching_level|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Apnée</th>
-            <td>{{ current_order.apnea_level|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Encadrement apnée</th>
-            <td>{{ current_order.apnea_teaching_level|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Tir sur cible</th>
-            <td>{{ current_order.underwater_shooting_level|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th style="text-align:left;">Encadrement tir sur cible</th>
-            <td>{{ current_order.underwater_shooting_teaching_level|default:"—" }}</td>
-        </tr>
-    </tbody>
-</table>
+    <h2 style="font-size:1.1rem; margin-bottom:0.75rem; color:#1a1a2e;">Niveaux</h2>
+    <table style="max-width:600px;">
+        <tbody>
+            <tr>
+                <th style="width:55%; text-align:left;">Plongée</th>
+                <td>{{ current_order.dive_level|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Encadrement plongée</th>
+                <td>{{ current_order.dive_teaching_level|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Apnée</th>
+                <td>{{ current_order.apnea_level|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Encadrement apnée</th>
+                <td>{{ current_order.apnea_teaching_level|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Tir sur cible</th>
+                <td>{{ current_order.underwater_shooting_level|default:"—" }}</td>
+            </tr>
+            <tr>
+                <th style="text-align:left;">Encadrement tir sur cible</th>
+                <td>{{ current_order.underwater_shooting_teaching_level|default:"—" }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#999;">Aucune adhésion pour la saison en cours.</p>
+    {% endif %}
+</div>
 
-{% else %}
-<p style="color:#999;">Aucune adhésion pour la saison en cours.</p>
-{% endif %}
+<div id="tab-formation" style="display:none;">
+    {% if formations %}
+        {% for cursus in formations %}
+        <form method="post" action="{% url 'adherent-formation-save' member.pk cursus.pk %}" style="margin-bottom:1.5rem; border:1px solid #e5e7eb; border-radius:6px; overflow:hidden;">
+            {% csrf_token %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; background:#f3f4f6; border-bottom:1px solid #e5e7eb; cursor:pointer;" onclick="toggleCursus({{ cursus.pk }})">
+                <span style="font-weight:600; color:#1a1a2e; font-size:1rem;">
+                    <span id="chevron-{{ cursus.pk }}" style="display:inline-block; margin-right:0.4rem; transition:transform 0.15s;">▼</span>
+                    {{ cursus.name }}
+                </span>
+                <button type="submit" onclick="event.stopPropagation()"
+                    style="padding:0.3rem 1rem; background:#1a1a2e; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.88rem;">
+                    Enregistrer
+                </button>
+            </div>
+
+            <div id="cursus-body-{{ cursus.pk }}">
+                {% for category in cursus.categories %}
+                <div style="padding:0.75rem 1rem 0;">
+                    <div style="font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280; margin-bottom:0.5rem;">{{ category.name }}</div>
+                    <table style="width:100%; max-width:800px; border-collapse:collapse; margin-bottom:0.75rem;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #e5e7eb;">
+                                <th style="text-align:left; padding:0.35rem 0.5rem; font-size:0.82rem; color:#374151; font-weight:500; width:40%;">Compétence</th>
+                                <th style="text-align:left; padding:0.35rem 0.5rem; font-size:0.82rem; color:#374151; font-weight:500; width:20%;">Statut</th>
+                                <th style="text-align:left; padding:0.35rem 0.5rem; font-size:0.82rem; color:#374151; font-weight:500;">Commentaire</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for skill in category.skills %}
+                            <tr style="{% if not skill.evaluations %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                                <td style="padding:0.4rem 0.5rem; font-size:0.9rem;">
+                                    <span style="display:inline-block; width:0.55rem; height:0.55rem; border-radius:50%; margin-right:0.4rem; vertical-align:middle;
+                                        {% if skill.status == 'acquired' %}background:#16a34a;{% elif skill.status == 'in_progress' %}background:#f59e0b;{% else %}background:#d1d5db;{% endif %}"></span>{{ skill.name }}
+                                </td>
+                                <td style="padding:0.4rem 0.5rem;">
+                                    <select name="skill_{{ skill.pk }}_status" style="width:100%; padding:0.25rem 0.4rem; border:1px solid #d1d5db; border-radius:3px; font-size:0.85rem; background:white;">
+                                        {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if skill.status == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td style="padding:0.4rem 0.5rem;">
+                                    <input type="text" name="skill_{{ skill.pk }}_comment" placeholder="Commentaire facultatif"
+                                        style="width:100%; padding:0.25rem 0.4rem; border:1px solid #d1d5db; border-radius:3px; font-size:0.85rem; box-sizing:border-box;">
+                                </td>
+                            </tr>
+                            {% if skill.evaluations %}
+                            <tr style="border-bottom:1px solid #f3f4f6;">
+                                <td colspan="3" style="padding:0 0.5rem 0.5rem 1.5rem;">
+                                    {% for ev in skill.evaluations %}
+                                    <div style="font-size:0.78rem; color:#6b7280; display:flex; gap:0.75rem; padding:0.15rem 0; {% if not forloop.last %}border-bottom:1px dotted #e5e7eb;{% endif %}">
+                                        <span style="white-space:nowrap; color:#9ca3af;">{{ ev.date|date:"d/m/Y" }}</span>
+                                        <span style="white-space:nowrap;">
+                                            {% if ev.status == 'acquired' %}<span style="color:#166534;">✓ Acquis</span>
+                                            {% elif ev.status == 'in_progress' %}<span style="color:#92400e;">~ En cours</span>
+                                            {% else %}<span style="color:#9ca3af;">— Non acquis</span>{% endif %}
+                                        </span>
+                                        {% if ev.comment %}<span style="color:#374151;">{{ ev.comment }}</span>{% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+                <div style="height:0.5rem;"></div>
+            </div>
+        </form>
+        {% endfor %}
+    {% else %}
+        <p style="color:#999;">Aucune formation associée à ce membre.</p>
+    {% endif %}
+</div>
+
+<script>
+function showTab(name) {
+    document.getElementById('tab-informations').style.display = name === 'informations' ? '' : 'none';
+    document.getElementById('tab-formation').style.display = name === 'formation' ? '' : 'none';
+    document.getElementById('tab-btn-informations').style.background = name === 'informations' ? '#1a1a2e' : 'none';
+    document.getElementById('tab-btn-informations').style.color = name === 'informations' ? 'white' : '#1a1a2e';
+    document.getElementById('tab-btn-formation').style.background = name === 'formation' ? '#1a1a2e' : 'none';
+    document.getElementById('tab-btn-formation').style.color = name === 'formation' ? 'white' : '#1a1a2e';
+    const url = new URL(window.location);
+    url.searchParams.set('tab', name);
+    history.replaceState(null, '', url);
+}
+
+function toggleCursus(pk) {
+    const body = document.getElementById('cursus-body-' + pk);
+    const chevron = document.getElementById('chevron-' + pk);
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
+}
+
+(function () {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab === 'formation') showTab('formation');
+})();
+</script>
 {% endblock %}

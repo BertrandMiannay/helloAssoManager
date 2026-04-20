@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS, CONTACT_FIELD_LABELS
-from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration, Cursus, CursusCategory, Skill
+from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration, Cursus, CursusCategory, Skill, MemberSkill, SkillEvaluation
 from django.views.generic import ListView, DetailView
 from django.db.models import Count, Max, Q
 from django.core.cache import cache
@@ -609,10 +609,73 @@ def adherent_detail(request, pk):
         .filter(member=member, form__season__current=True)
         .first()
     )
+    formations_qs = member.formations.prefetch_related('categories__skills').all()
+    skill_ids = [s.pk for f in formations_qs for c in f.categories.all() for s in c.skills.all()]
+    member_skills_map = {
+        ms.skill_id: ms.status
+        for ms in MemberSkill.objects.filter(member=member, skill_id__in=skill_ids)
+    }
+    evaluations_map = {}
+    for ev in SkillEvaluation.objects.filter(member=member, skill_id__in=skill_ids).order_by('-date', '-pk'):
+        evaluations_map.setdefault(ev.skill_id, []).append({
+            'date': ev.date,
+            'status': ev.status,
+            'status_display': ev.get_status_display(),
+            'comment': ev.comment,
+        })
+    status_choices = MemberSkill.SkillStatus.choices
+    formations = []
+    for cursus in formations_qs:
+        categories = []
+        for category in cursus.categories.all():
+            skills = [
+                {
+                    'pk': s.pk,
+                    'name': s.name,
+                    'status': member_skills_map.get(s.pk, MemberSkill.SkillStatus.NOT_ACQUIRED),
+                    'evaluations': evaluations_map.get(s.pk, []),
+                }
+                for s in category.skills.all()
+            ]
+            categories.append({'name': category.name, 'skills': skills})
+        formations.append({'pk': cursus.pk, 'name': cursus.name, 'categories': categories})
     return render(request, 'helloAssoImporter/adherent_detail.html', {
         'member': member,
         'current_order': current_order,
+        'formations': formations,
+        'status_choices': status_choices,
     })
+
+
+@club_staff_required
+def adherent_formation_save(request, pk, cursus_pk):
+    if request.method != 'POST':
+        return redirect('adherent-detail', pk=pk)
+    from django.utils import timezone as tz
+    from django.urls import reverse
+    member = get_object_or_404(
+        Member.objects.filter(membershipformorder__form__season__current=True).distinct(),
+        pk=pk,
+    )
+    cursus = get_object_or_404(Cursus, pk=cursus_pk)
+    valid_statuses = set(dict(MemberSkill.SkillStatus.choices))
+    skills = Skill.objects.filter(category__cursus=cursus)
+    today = tz.localdate()
+    for skill in skills:
+        status = request.POST.get(f'skill_{skill.pk}_status', MemberSkill.SkillStatus.NOT_ACQUIRED)
+        if status not in valid_statuses:
+            status = MemberSkill.SkillStatus.NOT_ACQUIRED
+        comment = request.POST.get(f'skill_{skill.pk}_comment', '').strip()
+        MemberSkill.objects.update_or_create(
+            member=member, skill=skill,
+            defaults={'status': status},
+        )
+        if comment:
+            SkillEvaluation.objects.create(
+                member=member, skill=skill,
+                date=today, status=status, comment=comment,
+            )
+    return redirect(reverse('adherent-detail', args=[pk]) + '?tab=formation')
 
 
 @club_staff_required
