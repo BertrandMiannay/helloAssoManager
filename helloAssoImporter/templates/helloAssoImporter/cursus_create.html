@@ -1,0 +1,30 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}Nouveau cursus{% endblock %}
+
+{% block saison_content %}
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+  <a href="{% url 'saison-formation' %}" style="color:#666; text-decoration:none;">← Retour</a>
+  <h1 style="margin:0;">Nouveau cursus</h1>
+</div>
+
+<div class="form-card">
+  {% if error %}<p style="color:#dc3545; margin-bottom:1rem;">{{ error }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="id_name">Nom du cursus</label>
+      <input type="text" id="id_name" name="name" required maxlength="200"
+             value="{{ form_data.name|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label for="id_date">Date de version</label>
+      <input type="date" id="id_date" name="date" required
+             value="{{ form_data.date|default:'' }}">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Créer</button>
+      <a href="{% url 'saison-formation' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

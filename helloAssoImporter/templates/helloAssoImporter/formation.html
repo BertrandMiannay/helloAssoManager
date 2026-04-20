@@ -2,5 +2,51 @@
 {% block title %}Formations{% endblock %}
 
 {% block saison_content %}
-<h1>Formations</h1>
+<style>
+  .cursus-card {
+    background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1.25rem; margin-bottom: 1rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .badge-active   { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; }
+  .badge-archived { background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; }
+</style>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+  <h1 style="margin:0;">Cursus de formation</h1>
+  <a href="{% url 'saison-cursus-creer' %}" class="btn btn-primary">+ Nouveau cursus</a>
+</div>
+
+{% if cursus_list %}
+  {% for cursus in cursus_list %}
+  <div class="cursus-card">
+    <div>
+      <a href="{% url 'saison-cursus-detail' cursus.pk %}"
+         style="font-weight:600; color:#1a1a2e; text-decoration:none; font-size:1.05rem;">
+        {{ cursus.name }}
+      </a>
+      <span class="badge-{{ cursus.status }}" style="margin-left:0.75rem;">
+        {{ cursus.get_status_display }}
+      </span>
+      <div style="color:#6b7280; font-size:0.875rem; margin-top:0.25rem;">
+        Version du {{ cursus.date|date:"d/m/Y" }} &mdash; {{ cursus.category_count }} catégorie{{ cursus.category_count|pluralize }}
+      </div>
+    </div>
+    <div style="display:flex; gap:0.5rem; flex-shrink:0;">
+      <a href="{% url 'saison-cursus-detail' cursus.pk %}" class="btn btn-secondary"
+         style="font-size:0.85rem; padding:0.25rem 0.75rem;">Modifier</a>
+      <form method="post" action="{% url 'saison-cursus-archiver' cursus.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary"
+                style="font-size:0.85rem; padding:0.25rem 0.75rem;"
+                onclick="return confirm('{% if cursus.status == 'active' %}Archiver{% else %}Réactiver{% endif %} ce cursus ?')">
+          {% if cursus.status == 'active' %}Archiver{% else %}Réactiver{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <p style="color:#999;">Aucun cursus créé. Commencez par créer un nouveau cursus.</p>
+{% endif %}
 {% endblock %}

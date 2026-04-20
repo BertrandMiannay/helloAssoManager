@@ -1,0 +1,205 @@
+{% extends "helloAssoImporter/saison_base.html" %}
+{% block title %}{{ cursus.name }}{% endblock %}
+
+{% block saison_content %}
+<style>
+  .detail-card {
+    background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1.25rem; margin-bottom: 1.5rem;
+  }
+  .category-block {
+    border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 1rem; overflow: hidden;
+  }
+  .category-header {
+    background: #f8f9fa; padding: 0.75rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .skill-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 1rem; border-top: 1px solid #f0f0f0;
+  }
+  .drag-handle {
+    color: #9ca3af; margin-right: 0.75rem; cursor: grab; user-select: none; font-size: 1.1rem;
+  }
+  .dragging { opacity: 0.4; }
+  .drag-over { border-top: 2px solid #3730a3; }
+  .badge-active   { background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; }
+  .badge-archived { background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 4px; font-size: 0.82em; }
+</style>
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+  <a href="{% url 'saison-formation' %}" style="color:#666; text-decoration:none;">← Retour</a>
+  <h1 style="margin:0;">{{ cursus.name }}</h1>
+  <span class="badge-{{ cursus.status }}">{{ cursus.get_status_display }}</span>
+</div>
+
+<!-- Informations du cursus -->
+<div class="detail-card">
+  <h2 style="font-size:1rem; margin:0 0 1rem;">Informations du cursus</h2>
+  <form method="post" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="edit_cursus">
+    <div class="form-group" style="margin-bottom:0; flex:1; min-width:200px;">
+      <label>Nom</label>
+      <input type="text" name="name" value="{{ cursus.name }}" required maxlength="200">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Date de version</label>
+      <input type="date" name="date" value="{{ cursus.date|date:'Y-m-d' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Enregistrer</button>
+  </form>
+</div>
+
+<!-- Catégories et compétences -->
+<div class="detail-card">
+  <h2 style="font-size:1rem; margin:0 0 1rem;">Catégories et compétences</h2>
+
+  <div id="category-list">
+    {% for category in categories %}
+    <div class="category-block" data-pk="{{ category.pk }}" draggable="true">
+      <div class="category-header">
+        <div style="display:flex; align-items:center;">
+          <span class="drag-handle" title="Glisser pour réordonner">⠿</span>
+          <strong>{{ category.name }}</strong>
+          <span style="color:#6b7280; font-size:0.85em; margin-left:0.75rem;">
+            {{ category.skills.count }} compétence{{ category.skills.count|pluralize }}
+          </span>
+        </div>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="_action" value="delete_category">
+          <input type="hidden" name="category_pk" value="{{ category.pk }}">
+          <button type="submit" class="btn btn-danger"
+                  style="font-size:0.8rem; padding:0.2rem 0.6rem;"
+                  onclick="return confirm('Supprimer la catégorie « {{ category.name }} » et toutes ses compétences ?')">
+            Supprimer
+          </button>
+        </form>
+      </div>
+
+      <div id="skills-{{ category.pk }}">
+        {% for skill in category.skills.all %}
+        <div class="skill-row" data-pk="{{ skill.pk }}" draggable="true">
+          <div style="display:flex; align-items:center;">
+            <span class="drag-handle" title="Glisser pour réordonner">⠿</span>
+            {{ skill.name }}
+          </div>
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="_action" value="delete_skill">
+            <input type="hidden" name="skill_pk" value="{{ skill.pk }}">
+            <button type="submit" class="btn btn-danger"
+                    style="font-size:0.8rem; padding:0.2rem 0.6rem;"
+                    onclick="return confirm('Supprimer la compétence « {{ skill.name }} » ?')">×</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+
+      <form method="post" style="padding:0.5rem 1rem; display:flex; gap:0.5rem; border-top:1px solid #f0f0f0;">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="add_skill">
+        <input type="hidden" name="category_pk" value="{{ category.pk }}">
+        <input type="text" name="skill_name" placeholder="Nouvelle compétence…"
+               style="flex:1; padding:0.35rem 0.6rem; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+        <button type="submit" class="btn btn-secondary" style="font-size:0.85rem; white-space:nowrap;">
+          + Ajouter
+        </button>
+      </form>
+    </div>
+    {% empty %}
+    <p style="color:#999; margin-bottom:1rem;">Aucune catégorie. Créez-en une ci-dessous.</p>
+    {% endfor %}
+  </div>
+
+  <form method="post" style="display:flex; gap:0.5rem; margin-top:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="add_category">
+    <input type="text" name="category_name" placeholder="Nouvelle catégorie…"
+           style="flex:1; max-width:350px; padding:0.4rem 0.6rem; border:1px solid #ccc; border-radius:4px;">
+    <button type="submit" class="btn btn-primary">+ Ajouter une catégorie</button>
+  </form>
+
+  <!-- Forms cachés soumis par JS pour le réordonnancement -->
+  <form id="reorder-cat-form" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="reorder_categories">
+    <div id="reorder-cat-inputs"></div>
+    <button type="submit"></button>
+  </form>
+
+  {% for category in categories %}
+  <form id="reorder-skills-form-{{ category.pk }}" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="_action" value="reorder_skills">
+    <input type="hidden" name="category_pk" value="{{ category.pk }}">
+    <div id="reorder-skills-inputs-{{ category.pk }}"></div>
+    <button type="submit"></button>
+  </form>
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  // Drag-and-drop générique
+  function makeDraggable(container, itemSelector, onReorder) {
+    let dragged = null;
+
+    container.addEventListener('dragstart', function (e) {
+      const item = e.target.closest(itemSelector);
+      if (!item || !container.contains(item)) return;
+      dragged = item;
+      setTimeout(function () { dragged.classList.add('dragging'); }, 0);
+    });
+
+    container.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      const target = e.target.closest(itemSelector);
+      if (!target || target === dragged || !container.contains(target)) return;
+      const rect = target.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      container.insertBefore(dragged, after ? target.nextSibling : target);
+    });
+
+    container.addEventListener('dragend', function () {
+      if (dragged) dragged.classList.remove('dragging');
+      dragged = null;
+      onReorder();
+    });
+  }
+
+  // Réordonnancement des catégories
+  const catList = document.getElementById('category-list');
+  makeDraggable(catList, '.category-block', function () {
+    const inputs = document.getElementById('reorder-cat-inputs');
+    inputs.innerHTML = '';
+    catList.querySelectorAll('.category-block').forEach(function (el) {
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'category_order';
+      inp.value = el.dataset.pk;
+      inputs.appendChild(inp);
+    });
+    document.getElementById('reorder-cat-form').submit();
+  });
+
+  // Réordonnancement des compétences par catégorie
+  catList.querySelectorAll('[id^="skills-"]').forEach(function (skillContainer) {
+    const catPk = skillContainer.id.replace('skills-', '');
+    makeDraggable(skillContainer, '.skill-row', function () {
+      const inputs = document.getElementById('reorder-skills-inputs-' + catPk);
+      inputs.innerHTML = '';
+      skillContainer.querySelectorAll('.skill-row').forEach(function (el) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'skill_order';
+        inp.value = el.dataset.pk;
+        inputs.appendChild(inp);
+      });
+      document.getElementById('reorder-skills-form-' + catPk).submit();
+    });
+  });
+})();
+</script>
+{% endblock %}

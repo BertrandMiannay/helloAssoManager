@@ -12,9 +12,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS, CONTACT_FIELD_LABELS
-from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration
+from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration, Cursus, CursusCategory, Skill
 from django.views.generic import ListView, DetailView
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.core.cache import cache
 from userManagement.views import AdminRequiredMixin, admin_required, ClubStaffRequiredMixin, club_staff_required
 
@@ -120,8 +120,130 @@ def delete_season(request, pk):
 
 
 @admin_required
-def formation(request):
-    return render(request, 'helloAssoImporter/formation.html', {'active_tab': 'formation'})
+def formation_list(request):
+    cursus_list = Cursus.objects.annotate(
+        category_count=Count('categories'),
+    ).order_by('status', '-date')
+    return render(request, 'helloAssoImporter/formation.html', {
+        'cursus_list': cursus_list,
+        'active_tab': 'formation',
+    })
+
+
+@admin_required
+def cursus_create(request):
+    error = None
+    form_data = {}
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        date_str = request.POST.get('date', '').strip()
+        form_data = {'name': name, 'date': date_str}
+        if not name:
+            error = "Le nom du cursus est obligatoire."
+        elif not date_str:
+            error = "La date de version est obligatoire."
+        else:
+            from datetime import date as date_cls
+            try:
+                parsed_date = date_cls.fromisoformat(date_str)
+            except ValueError:
+                error = "Format de date invalide (attendu : AAAA-MM-JJ)."
+            else:
+                cursus = Cursus.objects.create(name=name, date=parsed_date)
+                logger.info("CURSUS_CREATE pk=%s name=%s by=%s", cursus.pk, cursus.name, request.user.username)
+                messages.success(request, f"Cursus « {cursus.name} » créé.")
+                return redirect('saison-cursus-detail', pk=cursus.pk)
+    return render(request, 'helloAssoImporter/cursus_create.html', {
+        'error': error,
+        'form_data': form_data,
+        'active_tab': 'formation',
+    })
+
+
+@admin_required
+def cursus_detail(request, pk):
+    cursus = get_object_or_404(Cursus, pk=pk)
+
+    if request.method == 'POST':
+        action = request.POST.get('_action')
+
+        if action == 'edit_cursus':
+            name = request.POST.get('name', '').strip()
+            date_str = request.POST.get('date', '').strip()
+            if name and date_str:
+                from datetime import date as date_cls
+                try:
+                    cursus.name = name
+                    cursus.date = date_cls.fromisoformat(date_str)
+                    cursus.save(update_fields=['name', 'date'])
+                    messages.success(request, "Cursus mis à jour.")
+                except ValueError:
+                    messages.error(request, "Format de date invalide.")
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'add_category':
+            name = request.POST.get('category_name', '').strip()
+            if name:
+                max_order = cursus.categories.aggregate(m=Max('order'))['m'] or 0
+                CursusCategory.objects.create(cursus=cursus, name=name, order=max_order + 1)
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'delete_category':
+            cat_pk = request.POST.get('category_pk')
+            CursusCategory.objects.filter(pk=cat_pk, cursus=cursus).delete()
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'reorder_categories':
+            order_list = request.POST.getlist('category_order')
+            with transaction.atomic():
+                for i, cat_pk in enumerate(order_list, start=1):
+                    CursusCategory.objects.filter(pk=cat_pk, cursus=cursus).update(order=i)
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'add_skill':
+            cat_pk = request.POST.get('category_pk')
+            name = request.POST.get('skill_name', '').strip()
+            if name and cat_pk:
+                category = get_object_or_404(CursusCategory, pk=cat_pk, cursus=cursus)
+                max_order = category.skills.aggregate(m=Max('order'))['m'] or 0
+                Skill.objects.create(category=category, name=name, order=max_order + 1)
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'delete_skill':
+            skill_pk = request.POST.get('skill_pk')
+            Skill.objects.filter(pk=skill_pk, category__cursus=cursus).delete()
+            return redirect('saison-cursus-detail', pk=pk)
+
+        elif action == 'reorder_skills':
+            cat_pk = request.POST.get('category_pk')
+            order_list = request.POST.getlist('skill_order')
+            with transaction.atomic():
+                for i, skill_pk in enumerate(order_list, start=1):
+                    Skill.objects.filter(pk=skill_pk, category_id=cat_pk).update(order=i)
+            return redirect('saison-cursus-detail', pk=pk)
+
+    categories = cursus.categories.prefetch_related('skills').all()
+    return render(request, 'helloAssoImporter/cursus_detail.html', {
+        'cursus': cursus,
+        'categories': categories,
+        'active_tab': 'formation',
+    })
+
+
+@admin_required
+def cursus_archive(request, pk):
+    if request.method == 'POST':
+        cursus = get_object_or_404(Cursus, pk=pk)
+        if cursus.status == Cursus.Status.ACTIVE:
+            cursus.status = Cursus.Status.ARCHIVED
+            action_label = "archivé"
+        else:
+            cursus.status = Cursus.Status.ACTIVE
+            action_label = "réactivé"
+        cursus.save(update_fields=['status'])
+        logger.info("CURSUS_STATUS pk=%s status=%s by=%s", cursus.pk, cursus.status, request.user.username)
+        messages.success(request, f"Cursus « {cursus.name} » {action_label}.")
+    return redirect('saison-formation')
 
 
 @admin_required

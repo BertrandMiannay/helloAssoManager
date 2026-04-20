@@ -131,3 +131,86 @@ class MemberShipFormOrder(models.Model):
 
     def __str__(self):
         return str(self.item_id)
+
+
+class Cursus(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE   = 'active',   'Actif'
+        ARCHIVED = 'archived', 'Archivé'
+
+    name   = models.CharField(max_length=200)
+    date   = models.DateField(help_text="Date de version du cursus")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+
+    class Meta:
+        verbose_name        = 'Cursus'
+        verbose_name_plural = 'Cursus'
+        ordering            = ['-date']
+
+    def __str__(self):
+        return self.name
+
+
+class CursusCategory(models.Model):
+    cursus = models.ForeignKey(Cursus, on_delete=models.CASCADE, related_name='categories')
+    name   = models.CharField(max_length=200)
+    order  = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name        = 'Catégorie'
+        verbose_name_plural = 'Catégories'
+        ordering            = ['order', 'pk']
+
+    def __str__(self):
+        return f"{self.cursus.name} — {self.name}"
+
+
+class Skill(models.Model):
+    category = models.ForeignKey(CursusCategory, on_delete=models.CASCADE, related_name='skills')
+    name     = models.CharField(max_length=200)
+    order    = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name        = 'Compétence'
+        verbose_name_plural = 'Compétences'
+        ordering            = ['order', 'pk']
+
+    def __str__(self):
+        return self.name
+
+
+class MemberSkill(models.Model):
+    class SkillStatus(models.TextChoices):
+        NOT_ACQUIRED = 'not_acquired', 'Non acquis'
+        IN_PROGRESS  = 'in_progress',  "En cours d'acquisition"
+        ACQUIRED     = 'acquired',     'Acquis'
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='member_skills')
+    skill  = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='member_skills')
+    status = models.CharField(max_length=20, choices=SkillStatus.choices, default=SkillStatus.NOT_ACQUIRED)
+
+    class Meta:
+        verbose_name        = 'Compétence membre'
+        verbose_name_plural = 'Compétences membres'
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'skill'], name='unique_member_skill')
+        ]
+
+    def __str__(self):
+        return f"{self.member} — {self.skill}"
+
+
+class SkillEvaluation(models.Model):
+    member  = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='skill_evaluations')
+    skill   = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='evaluations')
+    date    = models.DateField()
+    status  = models.CharField(max_length=20, choices=MemberSkill.SkillStatus.choices)
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name        = 'Évaluation'
+        verbose_name_plural = 'Évaluations'
+        ordering            = ['-date']
+
+    def __str__(self):
+        return f"{self.member} — {self.skill} ({self.date})"

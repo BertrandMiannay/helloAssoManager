@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
 
-from .models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration
+from .models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventFormOrder, EventRegistration, Cursus, CursusCategory, Skill, MemberSkill, SkillEvaluation
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +103,37 @@ admin.site.register(Season)
 admin.site.register(MemberShipFormOrder)
 admin.site.register(EventFormOrder)
 admin.site.register(EventRegistration)
+
+
+class SkillInline(admin.TabularInline):
+    model = Skill
+    extra = 0
+    ordering = ['order']
+
+
+class CursusCategoryInline(admin.TabularInline):
+    model = CursusCategory
+    extra = 0
+    ordering = ['order']
+
+
+@admin.register(Cursus)
+class CursusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date', 'status')
+    list_filter  = ('status',)
+    inlines      = [CursusCategoryInline]
+
+
+@admin.register(CursusCategory)
+class CursusCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'cursus', 'order')
+    inlines      = [SkillInline]
+
+
+@admin.register(Skill)
+class SkillAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'order')
+
+
+admin.site.register(MemberSkill)
+admin.site.register(SkillEvaluation)
