@@ -25,6 +25,11 @@
               {% if active_tab == 'membres' %}background:#1a1a2e; color:white;{% else %}color:#1a1a2e;{% endif %}">
         Membres
     </a>
+    <a href="{% url 'saison-cursus-importer' %}"
+       style="padding:0.5rem 1.25rem; text-decoration:none; font-size:0.95rem;
+              {% if active_tab == 'importer' %}background:#1a1a2e; color:white;{% else %}color:#1a1a2e;{% endif %}">
+        Importer formation
+    </a>
 </div>
 
 {% block saison_content %}{% endblock %}

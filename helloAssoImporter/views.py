@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from itertools import groupby as itertools_groupby
@@ -244,6 +245,58 @@ def cursus_archive(request, pk):
         logger.info("CURSUS_STATUS pk=%s status=%s by=%s", cursus.pk, cursus.status, request.user.username)
         messages.success(request, f"Cursus « {cursus.name} » {action_label}.")
     return redirect('saison-formation')
+
+
+@admin_required
+def cursus_import_json(request):
+    error = None
+    json_text = ''
+    if request.method == 'POST':
+        json_text = request.POST.get('json_data', '').strip()
+        try:
+            data = json.loads(json_text)
+        except json.JSONDecodeError as e:
+            error = f"JSON invalide : {e}"
+        else:
+            name = str(data.get('name', '')).strip()
+            date_str = str(data.get('date', '')).strip()
+            categories_raw = data.get('categories', [])
+            if not name:
+                error = "Le champ « name » est obligatoire."
+            elif not date_str:
+                error = "Le champ « date » est obligatoire (format AAAA-MM-JJ)."
+            elif not isinstance(categories_raw, list):
+                error = "Le champ « categories » doit être une liste."
+            else:
+                from datetime import date as date_cls
+                try:
+                    parsed_date = date_cls.fromisoformat(date_str)
+                except ValueError:
+                    error = "Format de date invalide (attendu : AAAA-MM-JJ)."
+                else:
+                    with transaction.atomic():
+                        cursus = Cursus.objects.create(name=name, date=parsed_date)
+                        for cat_order, cat_data in enumerate(categories_raw, start=1):
+                            cat_name = str(cat_data.get('name', '')).strip()
+                            if not cat_name:
+                                continue
+                            category = CursusCategory.objects.create(
+                                cursus=cursus, name=cat_name, order=cat_order
+                            )
+                            for skill_order, skill_data in enumerate(cat_data.get('skills', []), start=1):
+                                skill_name = str(skill_data.get('name', '')).strip()
+                                if skill_name:
+                                    Skill.objects.create(
+                                        category=category, name=skill_name, order=skill_order
+                                    )
+                    logger.info("CURSUS_IMPORT pk=%s name=%s by=%s", cursus.pk, cursus.name, request.user.username)
+                    messages.success(request, f"Cursus « {cursus.name} » importé avec succès.")
+                    return redirect('saison-cursus-detail', pk=cursus.pk)
+    return render(request, 'helloAssoImporter/formation_import.html', {
+        'error': error,
+        'json_text': json_text,
+        'active_tab': 'importer',
+    })
 
 
 @admin_required
