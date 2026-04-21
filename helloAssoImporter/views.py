@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from urllib.parse import quote
 from itertools import groupby as itertools_groupby
 from django import forms
 
@@ -83,7 +84,8 @@ class EventFormDetailView(ClubStaffRequiredMixin, DetailView):
 
 
 def notify_api_error(request, error: HelloAssoApiError):
-    messages.error(request, f"Échec du rafraîchissement : {error}")
+    logger.error("HelloAsso API error: %s", error)
+    messages.error(request, "Échec de la communication avec HelloAsso. Veuillez réessayer.")
 
 
 @admin_required
@@ -381,6 +383,8 @@ def membership_form_detail(request, form_slug):
 
 @admin_required
 def refresh_membership_forms(request):
+    if request.method != 'POST':
+        return redirect('saison-formulaires')
     api = get_hello_asso_api()
     try:
         count = api.refresh_membership_forms()
@@ -788,9 +792,12 @@ def adherent_formation_export(request, pk, cursus_pk):
     doc.build(story)
 
     buf.seek(0)
-    filename = f"evaluation_{member.last_name}_{member.first_name}_{cursus.name}.pdf"
+    raw_name = f"evaluation_{member.last_name}_{member.first_name}_{cursus.name}.pdf"
+    safe_ascii = raw_name.replace('"', '').replace('\n', '').replace('\r', '')
     response = HttpResponse(buf, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Disposition'] = (
+        f"attachment; filename=\"{safe_ascii}\"; filename*=UTF-8''{quote(raw_name)}"
+    )
     return response
 
 
@@ -843,7 +850,8 @@ def create_event_form(request):
                 messages.success(request, f"Sortie « {d['title']} » créée avec succès.")
                 return redirect('inscriptions')
             except HelloAssoApiError as e:
-                messages.error(request, f"Échec de la création : {e}")
+                logger.error("HelloAsso API error (create_event_form): %s", e)
+                messages.error(request, "Échec de la création de la sortie. Veuillez réessayer.")
     else:
         form = EventFormCreateForm()
     return render(request, 'helloAssoImporter/event_form_create.html', {'form': form})
@@ -855,6 +863,8 @@ _REFRESH_COOLDOWN_SECONDS = 60
 
 @club_staff_required
 def refresh_event_forms(request):
+    if request.method != 'POST':
+        return redirect('inscriptions')
     if cache.get(_REFRESH_COOLDOWN_KEY):
         messages.warning(request, "Rafraîchissement déjà effectué récemment. Veuillez patienter 1 minute.")
         return redirect('inscriptions')

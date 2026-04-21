@@ -6,7 +6,10 @@
 <style>.sortable { cursor: pointer; }</style>
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">Liste des sorties</h1>
-    <a href="{% url 'inscriptions-refresh' %}" class="btn btn-primary">Rafraîchir</a>
+    <form method="post" action="{% url 'inscriptions-refresh' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Rafraîchir</button>
+    </form>
     <a href="{% url 'event-form-create' %}" class="btn btn-secondary">+ Créer une sortie</a>
 </div>
 
