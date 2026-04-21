@@ -21,12 +21,15 @@ python3 -m venv .venv
 sudo mkdir /etc/helloasso
 sudo cp deploy/env.example /etc/helloasso/env
 sudo nano /etc/helloasso/env  # remplir SECRET_KEY, ALLOWED_HOSTS=<domaine>, etc.
-sudo chmod 600 /etc/helloasso/env
+sudo chmod 666 /etc/helloasso/env  
 ```
 
 ## 3. Préparer l'app
 
+Les variables d'environnement de `/etc/helloasso/env` doivent être chargées avant de lancer les commandes Django :
+
 ```bash
+set -a && source /etc/helloasso/env && set +a
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py collectstatic --no-input
 .venv/bin/python manage.py init_dev_db  # crée le superuser admin/admin
@@ -101,6 +104,7 @@ L'app est accessible sur `https://<domaine>`.
 cd ~/helloAssoManager
 git pull
 .venv/bin/poetry install --only main
+set -a && source /etc/helloasso/env && set +a
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py collectstatic --no-input
 sudo systemctl restart helloasso

@@ -13,6 +13,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
+from datetime import timedelta
 
 from common.api.helloAssoApi import get_hello_asso_api, HelloAssoApiError, FIELD_EMAIL, FIELD_BIRTHDATE, FIELD_SEX, FIELD_LICENCE, LEVEL_FIELD_LABELS, CONTACT_FIELD_LABELS
 from helloAssoImporter.models import Season, MemberShipForm, MemberShipFormOrder, Member, EventForm, EventRegistration, Cursus, CursusCategory, Skill, MemberSkill, SkillEvaluation
@@ -880,7 +882,8 @@ def refresh_event_forms(request):
     registrations_added = 0
     for form in EventForm.objects.all():
         try:
-            registrations_added += api.get_event_form_orders(form, since=form.last_registration_updated)
+            since = form.last_registration_updated - timedelta(hours=24) if form.last_registration_updated else None
+            registrations_added += api.get_event_form_orders(form, since=since)
         except HelloAssoApiError as e:
             notify_api_error(request, e)
     elapsed = round(time.time() - start)
