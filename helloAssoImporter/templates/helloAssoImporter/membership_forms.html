@@ -4,7 +4,10 @@
 {% block saison_content %}
 <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
     <h1 style="margin-bottom:0;">Formulaires d'inscription</h1>
-    <a href="{% url 'saison-refresh' %}" class="btn btn-primary">Rafraîchir</a>
+    <form method="post" action="{% url 'saison-refresh' %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Rafraîchir</button>
+    </form>
 </div>
 
 {% if membership_forms %}
